@@ -1,0 +1,174 @@
+{
+  "comment": "SoundsOfNature - Ambient Wildlife Sound Definitions",
+  "comment2": "Place .ogg files in assets/soundsofnature/sounds/ambient/",
+  "comment3": "temperature: Celsius range, rainfall: 0.0-1.0, forestDensity: 0.0-1.0",
+  "comment4": "timeOfDay: dawn(0.2-0.35), morning(0.35-0.5), midday(0.5-0.65), afternoon(0.65-0.75), dusk(0.75-0.85), night(0.85-1.0 + 0.0-0.2)",
+
+  "soundGroups": [
+    {
+      "id": "songbirds_temperate",
+      "label": "Temperate Songbirds",
+      "sounds": [
+        "ambient/cardinal_call1",
+        "ambient/cardinal_call2",
+        "ambient/bluejay_call1",
+        "ambient/bluejay_call2",
+        "ambient/mockingbird_call1",
+        "ambient/mockingbird_call2",
+        "ambient/robin_call1",
+        "ambient/sparrow_call1"
+      ],
+      "conditions": {
+        "temperature": { "min": 5, "max": 35 },
+        "rainfall": { "min": 0.3, "max": 1.0 },
+        "forestDensity": { "min": 0.15, "max": 1.0 },
+        "timeOfDay": ["dawn", "morning", "midday", "afternoon"]
+      },
+      "intervalSeconds": { "min": 8, "max": 25 },
+      "volume": { "min": 0.15, "max": 0.4 },
+      "pitchVariance": 0.08,
+      "maxConcurrent": 2,
+      "weight": 10
+    },
+    {
+      "id": "crows",
+      "label": "Crows & Ravens",
+      "sounds": [
+        "ambient/crow_caw1",
+        "ambient/crow_caw2",
+        "ambient/crow_caw3"
+      ],
+      "conditions": {
+        "temperature": { "min": -10, "max": 35 },
+        "rainfall": { "min": 0.1, "max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": ["morning", "midday", "afternoon", "dusk"]
+      },
+      "intervalSeconds": { "min": 15, "max": 45 },
+      "volume": { "min": 0.2, "max": 0.5 },
+      "pitchVariance": 0.05,
+      "maxConcurrent": 1,
+      "weight": 7
+    },
+    {
+      "id": "owls",
+      "label": "Owls",
+      "sounds": [
+        "ambient/owl_hoot1",
+        "ambient/owl_hoot2",
+        "ambient/owl_screech1"
+      ],
+      "conditions": {
+        "temperature": { "min": -15, "max": 30 },
+        "rainfall": { "min": 0.2, "max": 1.0 },
+        "forestDensity": { "min": 0.2, "max": 1.0 },
+        "timeOfDay": ["dusk", "night"]
+      },
+      "intervalSeconds": { "min": 20, "max": 60 },
+      "volume": { "min": 0.2, "max": 0.45 },
+      "pitchVariance": 0.03,
+      "maxConcurrent": 1,
+      "weight": 6
+    },
+    {
+      "id": "wolves",
+      "label": "Wolves",
+      "sounds": [
+        "ambient/wolf_howl1",
+        "ambient/wolf_howl2",
+        "ambient/wolf_howl_distant1"
+      ],
+      "conditions": {
+        "temperature": { "min": -25, "max": 15 },
+        "rainfall": { "min": 0.2, "max": 1.0 },
+        "forestDensity": { "min": 0.1, "max": 1.0 },
+        "timeOfDay": ["dusk", "night", "dawn"]
+      },
+      "intervalSeconds": { "min": 45, "max": 120 },
+      "volume": { "min": 0.25, "max": 0.55 },
+      "pitchVariance": 0.04,
+      "maxConcurrent": 1,
+      "weight": 4
+    },
+    {
+      "id": "coyotes",
+      "label": "Coyotes",
+      "sounds": [
+        "ambient/coyote_howl1",
+        "ambient/coyote_yip1",
+        "ambient/coyote_bark1"
+      ],
+      "conditions": {
+        "temperature": { "min": -5, "max": 40 },
+        "rainfall": { "min": 0.0, "max": 0.7 },
+        "forestDensity": { "min": 0.0, "max": 0.6 },
+        "timeOfDay": ["dusk", "night", "dawn"]
+      },
+      "intervalSeconds": { "min": 40, "max": 100 },
+      "volume": { "min": 0.2, "max": 0.5 },
+      "pitchVariance": 0.06,
+      "maxConcurrent": 1,
+      "weight": 5
+    },
+    {
+      "id": "hyenas",
+      "label": "Hyenas",
+      "sounds": [
+        "ambient/hyena_laugh1",
+        "ambient/hyena_whoop1",
+        "ambient/hyena_call1"
+      ],
+      "conditions": {
+        "temperature": { "min": 20, "max": 50 },
+        "rainfall": { "min": 0.0, "max": 0.4 },
+        "forestDensity": { "min": 0.0, "max": 0.3 },
+        "timeOfDay": ["dusk", "night", "dawn"]
+      },
+      "intervalSeconds": { "min": 50, "max": 130 },
+      "volume": { "min": 0.25, "max": 0.5 },
+      "pitchVariance": 0.05,
+      "maxConcurrent": 1,
+      "weight": 3
+    },
+    {
+      "id": "frogs",
+      "label": "Frogs & Crickets",
+      "sounds": [
+        "ambient/frog_croak1",
+        "ambient/frog_croak2",
+        "ambient/cricket_chirp1",
+        "ambient/cricket_chorus1"
+      ],
+      "conditions": {
+        "temperature": { "min": 10, "max": 40 },
+        "rainfall": { "min": 0.4, "max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": ["dusk", "night"]
+      },
+      "intervalSeconds": { "min": 5, "max": 15 },
+      "volume": { "min": 0.1, "max": 0.3 },
+      "pitchVariance": 0.1,
+      "maxConcurrent": 3,
+      "weight": 8
+    },
+    {
+      "id": "cicadas",
+      "label": "Cicadas",
+      "sounds": [
+        "ambient/cicada_buzz1",
+        "ambient/cicada_buzz2"
+      ],
+      "conditions": {
+        "temperature": { "min": 25, "max": 45 },
+        "rainfall": { "min": 0.2, "max": 0.8 },
+        "forestDensity": { "min": 0.2, "max": 1.0 },
+        "timeOfDay": ["midday", "afternoon"]
+      },
+      "intervalSeconds": { "min": 10, "max": 30 },
+      "volume": { "min": 0.15, "max": 0.35 },
+      "pitchVariance": 0.06,
+      "maxConcurrent": 2,
+      "weight": 6
+    }
+  ]
+}

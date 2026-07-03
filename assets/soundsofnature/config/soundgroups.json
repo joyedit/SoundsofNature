@@ -1,0 +1,721 @@
+{
+  "soundGroups": [
+    {
+      "id": "songbirds_temperate",
+      "label": "Temperate Songbirds",
+      "sounds": [
+        "sounds/ambient/cardinal_call1",
+        "sounds/ambient/cardinal_call2",
+        "sounds/ambient/cardinal_call3",
+        "sounds/ambient/cardinal_call4",
+        "sounds/ambient/cardinal_call5",
+        "sounds/ambient/cardinal_call6",
+        "sounds/ambient/songbird_call1",
+        "sounds/ambient/songbird_call2",
+        "sounds/ambient/songbird_call3",
+        "sounds/ambient/songbird_call4",
+        "sounds/ambient/songbird_call5",
+        "sounds/ambient/songbird_call6",
+        "sounds/ambient/songbird_call7",
+        "sounds/ambient/songbird_call8",
+        "sounds/ambient/songbird_call9",
+        "sounds/ambient/songbird_call10",
+        "sounds/ambient/songbird_call11",
+        "sounds/ambient/songbird_call12",
+        "sounds/ambient/finch_call1",
+        "sounds/ambient/finch_call2",
+        "sounds/ambient/finch_call3",
+        "sounds/ambient/finch_call4",
+        "sounds/ambient/wren_call1",
+        "sounds/ambient/wren_call2",
+        "sounds/ambient/wren_call3",
+        "sounds/ambient/mockingbird_call1",
+        "sounds/ambient/mockingbird_call2"
+      ],
+      "conditions": {
+        "temperature":   { "min": 5,   "max": 42  },
+        "rainfall":      { "min": 0.0, "max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": ["dawn", "morning", "midday", "afternoon"],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 40, "max": 120 },
+      "volume":          { "min": 0.02,"max": 0.136},
+      "pitchVariance": 0.08,
+      "maxConcurrent": 2,
+      "weight": 6
+    },
+    {
+      "id": "loons",
+      "label": "Loons",
+      "sounds": [
+        "sounds/ambient/loon_call1",
+        "sounds/ambient/loon_call2",
+        "sounds/ambient/loon_call3",
+        "sounds/ambient/loon_call4",
+        "sounds/ambient/loon_call5",
+        "sounds/ambient/loon_call6",
+        "sounds/ambient/loon_call7"
+      ],
+      "conditions": {
+        "temperature":   { "min": -10, "max": 25  },
+        "rainfall":      { "min": 0.45,"max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 0.45 },
+        "timeOfDay": ["dawn", "morning", "dusk", "night"],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 60, "max": 180 },
+      "volume":          { "min": 0.03,"max": 0.170},
+      "pitchVariance": 0.03,
+      "maxConcurrent": 2,
+      "weight": 5
+    },
+    {
+      "id": "mourning_doves",
+      "label": "Mourning Doves",
+      "sounds": [
+        "sounds/ambient/mourning_dove1",
+        "sounds/ambient/mourning_dove2"
+      ],
+      "conditions": {
+        "temperature":   { "min": 0,   "max": 42  },
+        "rainfall":      { "min": 0.0, "max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": ["dawn", "morning"],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 50, "max": 130 },
+      "volume":          { "min": 0.02,"max": 0.136},
+      "pitchVariance": 0.06,
+      "maxConcurrent": 1,
+      "weight": 6
+    },
+    {
+      "id": "crows",
+      "label": "Crows & Ravens",
+      "sounds": [
+        "sounds/ambient/crow_call3",
+        "sounds/ambient/crow_call4",
+        "sounds/ambient/crow_call5",
+        "sounds/ambient/crow_call6",
+        "sounds/ambient/crow_call7",
+        "sounds/ambient/crow_call8",
+        "sounds/ambient/crow_call9"
+      ],
+      "conditions": {
+        "temperature":   { "min": -10, "max": 50  },
+        "rainfall":      { "min": 0.0, "max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": ["morning", "midday", "afternoon"],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 180,"max": 480 },
+      "volume":          { "min": 0.01,"max": 0.068},
+      "pitchVariance": 0.05,
+      "maxConcurrent": 1,
+      "weight": 7
+    },
+    {
+      "id": "owls",
+      "label": "Owls",
+      "sounds": [
+        "sounds/ambient/owl_hoot1",
+        "sounds/ambient/owl_hoot2",
+        "sounds/ambient/owl_hoot3"
+      ],
+      "conditions": {
+        "temperature":   { "min": -15, "max": 30  },
+        "rainfall":      { "min": 0.0, "max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": ["dusk", "night"],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 42, "max": 117 },
+      "volume":          { "min": 0.02,"max": 0.153},
+      "pitchVariance": 0.03,
+      "maxConcurrent": 1,
+      "weight": 6
+    },
+    {
+      "id": "wolves",
+      "label": "Wolves",
+      "sounds": [
+        "sounds/ambient/wolf_howl1",
+        "sounds/ambient/wolf_howl2",
+        "sounds/ambient/wolf_howl3",
+        "sounds/ambient/wolf_howl_distant1",
+        "sounds/ambient/wolf_howl_distant2",
+        "sounds/ambient/wolf_howl_distant3",
+        "sounds/ambient/wolf_howl_distant4"
+      ],
+      "conditions": {
+        "temperature":   { "min": -25, "max": 15  },
+        "rainfall":      { "min": 0.0, "max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": ["dusk", "night", "dawn"],
+        "seasons":   ["autumn", "winter", "spring"]
+      },
+      "intervalSeconds": { "min": 92, "max": 234 },
+      "volume":          { "min": 0.03,"max": 0.187},
+      "pitchVariance": 0.04,
+      "maxConcurrent": 1,
+      "weight": 4
+    },
+    {
+      "id": "hyenas",
+      "label": "Hyenas",
+      "sounds": [
+        "sounds/ambient/hyena_laugh1",
+        "sounds/ambient/hyena_laugh2",
+        "sounds/ambient/hyena_whoop1",
+        "sounds/ambient/hyena_whoop2"
+      ],
+      "conditions": {
+        "temperature":   { "min": 20,  "max": 50  },
+        "rainfall":      { "min": 0.0, "max": 0.4 },
+        "forestDensity": { "min": 0.0, "max": 0.3 },
+        "timeOfDay": ["dusk", "night", "dawn"],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 100,"max": 250 },
+      "volume":          { "min": 0.03,"max": 0.119},
+      "pitchVariance": 0.05,
+      "maxConcurrent": 1,
+      "weight": 3
+    },
+    {
+      "id": "lions",
+      "label": "Lions (distant)",
+      "sounds": [
+        "sounds/ambient/lion_roar_distant1",
+        "sounds/ambient/lion_roar_distant2"
+      ],
+      "conditions": {
+        "temperature":   { "min": 22,  "max": 50  },
+        "rainfall":      { "min": 0.0, "max": 0.35 },
+        "forestDensity": { "min": 0.0, "max": 0.35 },
+        "timeOfDay": ["dusk", "night", "dawn"],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 130, "max": 340 },
+      "volume":          { "min": 0.015,"max": 0.085},
+      "pitchVariance": 0.04,
+      "maxConcurrent": 1,
+      "weight": 3
+    },
+    {
+      "id": "alligators",
+      "label": "Alligators",
+      "sounds": [
+        "sounds/ambient/alligator_roar1"
+      ],
+      "conditions": {
+        "temperature":   { "min": 22,  "max": 45  },
+        "rainfall":      { "min": 0.5, "max": 1.0 },
+        "forestDensity": { "min": 0.4, "max": 1.0 },
+        "timeOfDay": ["dawn", "morning", "dusk", "night"],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 120, "max": 320 },
+      "volume":          { "min": 0.03,"max": 0.145},
+      "pitchVariance": 0.05,
+      "maxConcurrent": 1,
+      "weight": 3
+    },
+    {
+      "id": "macaws",
+      "label": "Macaws",
+      "sounds": [
+        "sounds/ambient/macaw_call1"
+      ],
+      "conditions": {
+        "temperature":   { "min": 22,  "max": 45  },
+        "rainfall":      { "min": 0.5, "max": 1.0 },
+        "forestDensity": { "min": 0.4, "max": 1.0 },
+        "timeOfDay": ["dawn", "morning", "midday", "afternoon"],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 60, "max": 160 },
+      "volume":          { "min": 0.02,"max": 0.119},
+      "pitchVariance": 0.06,
+      "maxConcurrent": 1,
+      "weight": 5
+    },
+    {
+      "id": "frogs_croak_chorus",
+      "label": "Frog Croak Chorus",
+      "sounds": [
+        "sounds/ambient/frog_croak4",
+        "sounds/ambient/frog_croak5",
+        "sounds/ambient/frog_croak6",
+        "sounds/ambient/frog_croak7"
+      ],
+      "conditions": {
+        "temperature":   { "min": 8,   "max": 38  },
+        "rainfall":      { "min": 0.45,"max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": ["dusk", "night", "dawn"],
+        "seasons":   ["spring", "summer"]
+      },
+      "intervalSeconds": { "min": 12, "max": 34 },
+      "volume":          { "min": 0.015,"max": 0.19 },
+      "pitchVariance": 0.12,
+      "maxConcurrent": 5,
+      "burst":           { "min": 2, "max": 4 },
+      "weight": 8
+    },
+    {
+      "id": "weaver_birds",
+      "label": "Weaver Birds",
+      "sounds": [
+        "sounds/ambient/bird_flute1"
+      ],
+      "conditions": {
+        "temperature":   { "min": 20,  "max": 50  },
+        "rainfall":      { "min": 0.0, "max": 0.35 },
+        "forestDensity": { "min": 0.0, "max": 0.4 },
+        "timeOfDay": ["dawn", "morning", "midday", "afternoon"],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 30, "max": 80 },
+      "volume":          { "min": 0.02,"max": 0.119},
+      "pitchVariance": 0.09,
+      "maxConcurrent": 2,
+      "weight": 6
+    },
+    {
+      "id": "crickets_night",
+      "label": "Night Crickets",
+      "sounds": [
+        "sounds/ambient/forest_crickets1"
+      ],
+      "conditions": {
+        "temperature":   { "min": 3,   "max": 45  },
+        "rainfall":      { "min": 0.25,"max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": ["dusk", "night"],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 45, "max": 90  },
+      "volume":          { "min": 0.02,"max": 0.102},
+      "pitchVariance": 0.03,
+      "maxConcurrent": 1,
+      "weight": 6
+    },
+    {
+      "id": "rattlesnakes",
+      "label": "Rattlesnakes",
+      "sounds": [
+        "sounds/ambient/rattlesnake_rattle1",
+        "sounds/ambient/rattlesnake_rattle2",
+        "sounds/ambient/rattlesnake_rattle3"
+      ],
+      "conditions": {
+        "temperature":   { "min": 28,  "max": 50  },
+        "rainfall":      { "min": 0.0, "max": 0.2 },
+        "forestDensity": { "min": 0.0, "max": 0.2 },
+        "timeOfDay": ["morning", "midday", "afternoon", "dusk"],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 360, "max": 900 },
+      "volume":          { "min": 0.03,"max": 0.153},
+      "pitchVariance": 0.05,
+      "maxConcurrent": 1,
+      "weight": 2
+    },
+    {
+      "id": "frogs_spring",
+      "label": "Spring Peepers",
+      "sounds": [
+        "sounds/ambient/frog_croak1",
+        "sounds/ambient/frog_croak2",
+        "sounds/ambient/frog_croak3"
+      ],
+      "conditions": {
+        "temperature":   { "min": 5,   "max": 25  },
+        "rainfall":      { "min": 0.5, "max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": ["dusk", "night", "dawn"],
+        "seasons":   ["spring"]
+      },
+      "intervalSeconds": { "min": 8,  "max": 23  },
+      "volume":          { "min": 0.02,"max": 0.136},
+      "pitchVariance": 0.12,
+      "maxConcurrent": 3,
+      "weight": 9
+    },
+    {
+      "id": "frogs_summer",
+      "label": "Summer Frogs & Crickets",
+      "sounds": [
+        "sounds/ambient/frog_croak1",
+        "sounds/ambient/frog_croak2",
+        "sounds/ambient/cricket_chirp1",
+        "sounds/ambient/cricket_chirp2"
+      ],
+      "conditions": {
+        "temperature":   { "min": 15,  "max": 40  },
+        "rainfall":      { "min": 0.35,"max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": ["dusk", "night"],
+        "seasons":   ["summer"]
+      },
+      "intervalSeconds": { "min": 10, "max": 30  },
+      "volume":          { "min": 0.01,"max": 0.102},
+      "pitchVariance": 0.1,
+      "maxConcurrent": 3,
+      "weight": 8
+    },
+    {
+      "id": "crickets_autumn",
+      "label": "Autumn Crickets",
+      "sounds": [
+        "sounds/ambient/cricket_chirp1",
+        "sounds/ambient/cricket_chirp2",
+        "sounds/ambient/cricket_chirp3"
+      ],
+      "conditions": {
+        "temperature":   { "min": 5,   "max": 22  },
+        "rainfall":      { "min": 0.2, "max": 0.9 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": ["dusk", "night", "dawn"],
+        "seasons":   ["autumn"]
+      },
+      "intervalSeconds": { "min": 13, "max": 37  },
+      "volume":          { "min": 0.01,"max": 0.085},
+      "pitchVariance": 0.08,
+      "maxConcurrent": 2,
+      "weight": 7
+    },
+    {
+      "id": "cicadas",
+      "label": "Cicadas",
+      "sounds": [
+        "sounds/ambient/cicada_buzz1",
+        "sounds/ambient/cicada_buzz2",
+        "sounds/ambient/cicada_buzz3"
+      ],
+      "conditions": {
+        "temperature":   { "min": 25,  "max": 45  },
+        "rainfall":      { "min": 0.2, "max": 0.8 },
+        "forestDensity": { "min": 0.2, "max": 1.0 },
+        "timeOfDay": ["morning", "midday", "afternoon"],
+        "seasons":   ["summer"]
+      },
+      "intervalSeconds": { "min": 20, "max": 58  },
+      "volume":          { "min": 0.02,"max": 0.119},
+      "pitchVariance": 0.06,
+      "maxConcurrent": 2,
+      "weight": 6
+    },
+    {
+      "id": "squirrels",
+      "label": "Squirrels",
+      "sounds": [
+        "sounds/ambient/squirrel_chitter1",
+        "sounds/ambient/squirrel_chitter2",
+        "sounds/ambient/squirrel_chitter3",
+        "sounds/ambient/squirrel_chitter4"
+      ],
+      "conditions": {
+        "temperature":   { "min": 5,   "max": 42  },
+        "rainfall":      { "min": 0.0, "max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": ["morning", "midday", "afternoon"],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 42, "max": 117 },
+      "volume":          { "min": 0.015,"max": 0.09},
+      "pitchVariance": 0.07,
+      "maxConcurrent": 1,
+      "weight": 6
+    },
+    {
+      "id": "woodpeckers",
+      "label": "Woodpeckers",
+      "sounds": [
+        "sounds/ambient/woodpecker_peck1",
+        "sounds/ambient/woodpecker_peck2",
+        "sounds/ambient/woodpecker_peck3"
+      ],
+      "conditions": {
+        "temperature":   { "min": 0,   "max": 35  },
+        "rainfall":      { "min": 0.0, "max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": ["dawn", "morning", "midday", "afternoon"],
+        "seasons":   ["spring", "summer", "autumn"]
+      },
+      "intervalSeconds": { "min": 280,"max": 700 },
+      "volume":          { "min": 0.02,"max": 0.119},
+      "pitchVariance": 0.04,
+      "maxConcurrent": 1,
+      "weight": 5
+    },
+    {
+      "id": "flies",
+      "label": "Flies (proximity)",
+      "sounds": [
+        "sounds/ambient/fly_buzz1",
+        "sounds/ambient/fly_buzz2",
+        "sounds/ambient/fly_buzz3",
+        "sounds/ambient/fly_buzz4"
+      ],
+      "proximityParticleTypes": ["EntityParticleMatingGnats"],
+      "proximityRange": 10,
+      "conditions": {
+        "temperature":   { "min": -10, "max": 60  },
+        "rainfall":      { "min": 0.0, "max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": [],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 6,  "max": 16  },
+      "volume":          { "min": 0.10,"max": 0.30},
+      "pitchVariance": 0.05,
+      "maxConcurrent": 1,
+      "weight": 5
+    },
+    {
+      "id": "cave_drips",
+      "label": "Cave Drips",
+      "sounds": [
+        "sounds/ambient/cave_drip1",
+        "sounds/ambient/cave_drip2",
+        "sounds/ambient/cave_drip3",
+        "sounds/ambient/cave_drip4"
+      ],
+      "playUnderground": true,
+      "conditions": {
+        "temperature":   { "min": -50, "max": 60  },
+        "rainfall":      { "min": 0.0, "max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": [],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 8,  "max": 25  },
+      "volume":          { "min": 0.02,"max": 0.128},
+      "pitchVariance": 0.08,
+      "maxConcurrent": 2,
+      "weight": 10
+    },
+    {
+      "id": "cave_stones",
+      "label": "Falling Stones",
+      "sounds": [
+        "sounds/ambient/cave_stone1",
+        "sounds/ambient/cave_stone2",
+        "sounds/ambient/cave_stone3",
+        "sounds/ambient/cave_stone4"
+      ],
+      "playUnderground": true,
+      "conditions": {
+        "temperature":   { "min": -50, "max": 60  },
+        "rainfall":      { "min": 0.0, "max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": [],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 40, "max": 120 },
+      "volume":          { "min": 0.03,"max": 0.153},
+      "pitchVariance": 0.06,
+      "maxConcurrent": 1,
+      "weight": 5
+    },
+    {
+      "id": "cave_bats",
+      "label": "Bats",
+      "sounds": [
+        "sounds/ambient/bat_screech1",
+        "sounds/ambient/bat_screech2",
+        "sounds/ambient/bat_screech3",
+        "sounds/ambient/bat_screech4"
+      ],
+      "playUnderground": true,
+      "conditions": {
+        "temperature":   { "min": -50, "max": 60  },
+        "rainfall":      { "min": 0.0, "max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": [],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 30, "max": 90  },
+      "volume":          { "min": 0.02,"max": 0.136},
+      "pitchVariance": 0.07,
+      "maxConcurrent": 1,
+      "weight": 6
+    },
+    {
+      "id": "cave_rustling",
+      "label": "Cave Rustling",
+      "sounds": [
+        "sounds/ambient/cave_rustle1",
+        "sounds/ambient/cave_rustle2",
+        "sounds/ambient/cave_rustle3",
+        "sounds/ambient/cave_rustle4"
+      ],
+      "playUnderground": true,
+      "conditions": {
+        "temperature":   { "min": -50, "max": 60  },
+        "rainfall":      { "min": 0.0, "max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": [],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 25, "max": 70  },
+      "volume":          { "min": 0.01,"max": 0.102},
+      "pitchVariance": 0.06,
+      "maxConcurrent": 1,
+      "weight": 7
+    },
+    {
+      "id": "wolves_pack",
+      "label": "Wolf Pack",
+      "sounds": [
+        "sounds/ambient/wolf_pack1",
+        "sounds/ambient/wolf_pack2",
+        "sounds/ambient/wolf_pack3",
+        "sounds/ambient/wolf_pack4"
+      ],
+      "conditions": {
+        "temperature":   { "min": -25, "max": 15  },
+        "rainfall":      { "min": 0.0, "max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": ["dusk", "night", "dawn"],
+        "seasons":   ["autumn", "winter", "spring"]
+      },
+      "intervalSeconds": { "min": 180, "max": 420 },
+      "volume":          { "min": 0.03,"max": 0.170},
+      "pitchVariance": 0.03,
+      "maxConcurrent": 1,
+      "weight": 3
+    },
+    {
+      "id": "owls_screech",
+      "label": "Barn Owl Screeches",
+      "sounds": [
+        "sounds/ambient/owl_screech1",
+        "sounds/ambient/owl_screech2",
+        "sounds/ambient/owl_screech3",
+        "sounds/ambient/owl_screech4"
+      ],
+      "conditions": {
+        "temperature":   { "min": -10, "max": 35  },
+        "rainfall":      { "min": 0.0, "max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": ["dusk", "night"],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 90, "max": 220 },
+      "volume":          { "min": 0.02,"max": 0.119},
+      "pitchVariance": 0.05,
+      "maxConcurrent": 1,
+      "weight": 4
+    },
+    {
+      "id": "crows_flight",
+      "label": "Crows in Flight",
+      "sounds": [
+        "sounds/ambient/crow_flight1",
+        "sounds/ambient/crow_flight2",
+        "sounds/ambient/crow_flight3",
+        "sounds/ambient/crow_flight4"
+      ],
+      "conditions": {
+        "temperature":   { "min": -10, "max": 50  },
+        "rainfall":      { "min": 0.0, "max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": ["dawn", "morning", "afternoon", "dusk"],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 200, "max": 500 },
+      "volume":          { "min": 0.01,"max": 0.085},
+      "pitchVariance": 0.05,
+      "maxConcurrent": 1,
+      "weight": 5
+    },
+    {
+      "id": "frogs_chorus",
+      "label": "Frog Chorus",
+      "sounds": [
+        "sounds/ambient/frog_chorus1",
+        "sounds/ambient/frog_chorus2",
+        "sounds/ambient/frog_chorus3",
+        "sounds/ambient/frog_chorus4"
+      ],
+      "conditions": {
+        "temperature":   { "min": 8,   "max": 38  },
+        "rainfall":      { "min": 0.45,"max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": ["dusk", "night", "dawn"],
+        "seasons":   ["spring", "summer"]
+      },
+      "intervalSeconds": { "min": 20, "max": 55 },
+      "volume":          { "min": 0.02,"max": 0.110},
+      "pitchVariance": 0.08,
+      "maxConcurrent": 2,
+      "weight": 7
+    },
+    {
+      "id": "bees",
+      "label": "Bumblebees",
+      "sounds": [
+        "sounds/ambient/bee_buzz1",
+        "sounds/ambient/bee_buzz2",
+        "sounds/ambient/bee_buzz3",
+        "sounds/ambient/bee_buzz4"
+      ],
+      "conditions": {
+        "temperature":   { "min": 12,  "max": 38  },
+        "rainfall":      { "min": 0.2, "max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 0.7 },
+        "timeOfDay": ["morning", "midday", "afternoon"],
+        "seasons":   ["spring", "summer"]
+      },
+      "intervalSeconds": { "min": 30, "max": 90  },
+      "volume":          { "min": 0.02,"max": 0.110},
+      "pitchVariance": 0.07,
+      "maxConcurrent": 2,
+      "weight": 6
+    },
+    {
+      "id": "goats",
+      "label": "Goats",
+      "sounds": [
+        "sounds/ambient/goat_bleat1",
+        "sounds/ambient/goat_bleat2",
+        "sounds/ambient/goat_bleat3"
+      ],
+      "conditions": {
+        "temperature":   { "min": -5,  "max": 35  },
+        "rainfall":      { "min": 0.0, "max": 0.8 },
+        "forestDensity": { "min": 0.0, "max": 0.5 },
+        "timeOfDay": ["dawn", "morning", "midday", "afternoon"],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 60, "max": 160 },
+      "volume":          { "min": 0.02,"max": 0.119},
+      "pitchVariance": 0.07,
+      "maxConcurrent": 1,
+      "weight": 5
+    },
+    {
+      "id": "hawks",
+      "label": "Hawks",
+      "sounds": [
+        "sounds/ambient/hawk_call1"
+      ],
+      "conditions": {
+        "temperature":   { "min": -10, "max": 45  },
+        "rainfall":      { "min": 0.0, "max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": ["morning", "midday", "afternoon"],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 180, "max": 450 },
+      "volume":          { "min": 0.02,"max": 0.119},
+      "pitchVariance": 0.05,
+      "maxConcurrent": 1,
+      "weight": 5
+    }
+  ]
+}
