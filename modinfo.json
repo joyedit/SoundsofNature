@@ -4,7 +4,7 @@
   "name": "Sounds of Nature",
   "description": "Immersive ambient wildlife sounds that vary by climate, biome, and time of day. Hear songbirds at dawn, crows in temperate forests, wolves at night, and owls at dusk.",
   "authors": ["Feyd"],
-  "version": "0.5.0",
+  "version": "0.7.0",
   "side": "client",
   "requiredOnClient": true,
   "requiredOnServer": false,

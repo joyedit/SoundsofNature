@@ -699,6 +699,158 @@
       "weight": 5
     },
     {
+      "id": "ravens_winter",
+      "label": "Ravens",
+      "sounds": [
+        "sounds/ambient/raven_croak1"
+      ],
+      "conditions": {
+        "temperature":   { "min": -50, "max": 10  },
+        "rainfall":      { "min": 0.0, "max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": ["dawn", "morning", "midday", "afternoon"],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 150, "max": 380 },
+      "volume":          { "min": 0.02,"max": 0.119},
+      "pitchVariance": 0.06,
+      "maxConcurrent": 1,
+      "weight": 5
+    },
+    {
+      "id": "chickadees",
+      "label": "Chickadees",
+      "sounds": [
+        "sounds/ambient/chickadee_call1",
+        "sounds/ambient/chickadee_call2",
+        "sounds/ambient/chickadee_call3",
+        "sounds/ambient/chickadee_call4"
+      ],
+      "conditions": {
+        "temperature":   { "min": -30, "max": 15  },
+        "rainfall":      { "min": 0.0, "max": 1.0 },
+        "forestDensity": { "min": 0.1, "max": 1.0 },
+        "timeOfDay": ["dawn", "morning", "midday", "afternoon"],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 45, "max": 130 },
+      "volume":          { "min": 0.02,"max": 0.128},
+      "pitchVariance": 0.07,
+      "maxConcurrent": 2,
+      "weight": 6
+    },
+    {
+      "id": "elk_rut",
+      "label": "Elk Bugles (autumn rut)",
+      "sounds": [
+        "sounds/ambient/elk_bugle1",
+        "sounds/ambient/elk_bugle2",
+        "sounds/ambient/elk_bugle3",
+        "sounds/ambient/elk_bugle4"
+      ],
+      "conditions": {
+        "temperature":   { "min": -5,  "max": 20  },
+        "rainfall":      { "min": 0.2, "max": 1.0 },
+        "forestDensity": { "min": 0.2, "max": 1.0 },
+        "timeOfDay": ["dawn", "dusk", "night"],
+        "seasons":   ["autumn"]
+      },
+      "intervalSeconds": { "min": 160, "max": 400 },
+      "volume":          { "min": 0.02,"max": 0.136},
+      "pitchVariance": 0.04,
+      "maxConcurrent": 1,
+      "weight": 5
+    },
+    {
+      "id": "howler_monkeys",
+      "label": "Howler Monkeys",
+      "sounds": [
+        "sounds/ambient/howler_monkey1",
+        "sounds/ambient/howler_monkey2",
+        "sounds/ambient/howler_monkey3",
+        "sounds/ambient/howler_monkey4"
+      ],
+      "conditions": {
+        "temperature":   { "min": 22,  "max": 45  },
+        "rainfall":      { "min": 0.5, "max": 1.0 },
+        "forestDensity": { "min": 0.4, "max": 1.0 },
+        "timeOfDay": ["dawn", "morning", "dusk"],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 110, "max": 300 },
+      "volume":          { "min": 0.02,"max": 0.128},
+      "pitchVariance": 0.05,
+      "maxConcurrent": 1,
+      "weight": 4
+    },
+    {
+      "id": "coyotes",
+      "label": "Coyotes",
+      "sounds": [
+        "sounds/ambient/coyote_yips1",
+        "sounds/ambient/coyote_yips2",
+        "sounds/ambient/coyote_yips3",
+        "sounds/ambient/coyote_yips4"
+      ],
+      "conditions": {
+        "temperature":   { "min": 15,  "max": 45  },
+        "rainfall":      { "min": 0.0, "max": 0.45 },
+        "forestDensity": { "min": 0.0, "max": 0.4 },
+        "timeOfDay": ["dusk", "night", "dawn"],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 110, "max": 280 },
+      "volume":          { "min": 0.03,"max": 0.153},
+      "pitchVariance": 0.05,
+      "maxConcurrent": 1,
+      "weight": 4
+    },
+    {
+      "id": "lake_ice",
+      "label": "Cracking Lake Ice",
+      "sounds": [
+        "sounds/ambient/ice_crack1",
+        "sounds/ambient/ice_crack2",
+        "sounds/ambient/ice_crack3",
+        "sounds/ambient/ice_crack4"
+      ],
+      "conditions": {
+        "temperature":   { "min": -50, "max": -2  },
+        "rainfall":      { "min": 0.0, "max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 0.35 },
+        "timeOfDay": [],
+        "seasons":   ["winter"]
+      },
+      "intervalSeconds": { "min": 90, "max": 260 },
+      "volume":          { "min": 0.03,"max": 0.170},
+      "pitchVariance": 0.08,
+      "maxConcurrent": 1,
+      "weight": 4
+    },
+    {
+      "id": "seagulls",
+      "label": "Seagulls",
+      "sounds": [
+        "sounds/ambient/seagull_call1",
+        "sounds/ambient/seagull_call2",
+        "sounds/ambient/seagull_call3",
+        "sounds/ambient/seagull_call4"
+      ],
+      "requiresOcean": true,
+      "conditions": {
+        "temperature":   { "min": -5,  "max": 45  },
+        "rainfall":      { "min": 0.0, "max": 1.0 },
+        "forestDensity": { "min": 0.0, "max": 1.0 },
+        "timeOfDay": ["dawn", "morning", "midday", "afternoon", "dusk"],
+        "seasons":   []
+      },
+      "intervalSeconds": { "min": 30, "max": 90 },
+      "volume":          { "min": 0.02,"max": 0.153},
+      "pitchVariance": 0.07,
+      "maxConcurrent": 2,
+      "weight": 6
+    },
+    {
       "id": "hawks",
       "label": "Hawks",
       "sounds": [

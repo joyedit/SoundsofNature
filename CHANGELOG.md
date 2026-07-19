@@ -2,6 +2,23 @@
 
 All notable changes to Sounds of Nature are documented here.
 
+## [0.7.0]
+
+### Added
+- Seagulls: a daytime coastal group that only plays near the ocean. New
+  `requiresOcean` sound-group condition — the mod samples the fluid layer at
+  sea level around the player for saltwater (48-block radius, cached ~10s) so
+  gulls fire on beaches, coastal cliffs, and at sea, but never inland.
+- `.son status` now reports whether the ocean is nearby.
+
+## [0.6.0]
+
+### Added
+- New wildlife: chickadees (cold forests, daytime), ravens (deep winter),
+  elk bugles (autumn rut, dawn/dusk/night), howler monkeys (jungle),
+  coyote yips (arid scrubland nights), and cracking lake ice (open winter
+  landscapes below -2°C).
+
 ## [0.5.0]
 
 ### Added

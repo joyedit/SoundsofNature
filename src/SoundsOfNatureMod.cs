@@ -83,6 +83,7 @@ namespace SoundsOfNature
                         BurstMax       = Math.Max(1, g["burst"]?["max"]?.Value<int>() ?? 1),
                         Weight         = g["weight"]?.Value<int>() ?? 5,
                         PlayUnderground = g["playUnderground"]?.Value<bool>() ?? false,
+                        RequiresOcean   = g["requiresOcean"]?.Value<bool>() ?? false,
                         ProximityEntities      = g["proximityEntities"]?.ToObject<List<string>>()      ?? new List<string>(),
                         ProximityParticleTypes = g["proximityParticleTypes"]?.ToObject<List<string>>() ?? new List<string>(),
                         ProximityRange         = g["proximityRange"]?.Value<float>()                   ?? 12f,
@@ -192,6 +193,7 @@ namespace SoundsOfNature
                 if (forestDensity < sg.ForestMin  || forestDensity > sg.ForestMax) continue;
                 if (sg.AllowedTimes.Count   > 0 && !sg.AllowedTimes.Contains(timeSlot)) continue;
                 if (sg.AllowedSeasons.Count > 0 && !sg.AllowedSeasons.Contains(season)) continue;
+                if (sg.RequiresOcean && !IsOceanNearby(pos, now)) continue;
 
                 Vec3d overridePos = null;
                 if (isProximity)
@@ -212,6 +214,58 @@ namespace SoundsOfNature
                 PlayRandomSound(sg, enclosureMult, overridePos);
             }
         }
+
+        #region Ocean Detection
+
+        private long     oceanCheckedMs = long.MinValue;
+        private BlockPos oceanCheckedPos;
+        private bool     oceanNearby;
+        private const int OceanRescanMs    = 10000; // cached verdict lifetime
+        private const int OceanRescanDist  = 16;    // moving farther than this invalidates the cache
+        private const int OceanScanRadius  = 48;    // horizontal sample radius around the player
+        private const int OceanScanStep    = 8;
+        private const int OceanMinSamples  = 3;     // salty samples required, so a stray placed block doesn't count
+
+        private bool IsOceanNearby(BlockPos playerPos, long now)
+        {
+            if (oceanCheckedPos != null && now - oceanCheckedMs < OceanRescanMs)
+            {
+                int mx = playerPos.X - oceanCheckedPos.X;
+                int mz = playerPos.Z - oceanCheckedPos.Z;
+                if (mx * mx + mz * mz < OceanRescanDist * OceanRescanDist)
+                    return oceanNearby;
+            }
+
+            oceanCheckedMs  = now;
+            oceanCheckedPos = playerPos.Copy();
+            oceanNearby     = false;
+
+            // Sample the fluid layer at the ocean surface (top water block sits just below sea
+            // level), regardless of the player's own altitude — a coastal clifftop still counts.
+            var ba = capi.World.BlockAccessor;
+            BlockPos sample = playerPos.Copy();
+            sample.Y = capi.World.SeaLevel - 1;
+            int salty = 0;
+
+            for (int dx = -OceanScanRadius; dx <= OceanScanRadius; dx += OceanScanStep)
+            {
+                for (int dz = -OceanScanRadius; dz <= OceanScanRadius; dz += OceanScanStep)
+                {
+                    sample.X = playerPos.X + dx;
+                    sample.Z = playerPos.Z + dz;
+                    Block fluid = ba.GetBlock(sample, BlockLayersAccess.Fluid);
+                    if (fluid?.Code?.Path.StartsWithOrdinal("saltwater") == true && ++salty >= OceanMinSamples)
+                    {
+                        oceanNearby = true;
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        #endregion
 
         private EntityParticleSystem epsCache;
         private const int ParticleWalkLimit = 5000; // safety cap on linked-list traversal
@@ -509,7 +563,8 @@ namespace SoundsOfNature
             capi.ShowChatMessage($"[SoundsOfNature] {(enabled ? "ON" : "OFF")} | Vol: {masterVolume:F1}x");
             if (cl != null)
                 capi.ShowChatMessage($"  Temp: {cl.Temperature:F1}°C  Rain: {cl.Rainfall:F2}  Forest: {cl.ForestDensity:F2}  Precip: {precip:F2}  Wind: {windSpeed:F2}{(muted ? " (MUTED)" : "")}");
-            capi.ShowChatMessage($"  Time: {timeSlot} ({capi.World.Calendar.HourOfDay:F1}h)  Season: {season}  Location: {locationDesc} (sky {skyLight})");
+            bool nearOcean = IsOceanNearby(pos, capi.ElapsedMilliseconds);
+            capi.ShowChatMessage($"  Time: {timeSlot} ({capi.World.Calendar.HourOfDay:F1}h)  Season: {season}  Location: {locationDesc} (sky {skyLight})  Ocean: {(nearOcean ? "yes" : "no")}");
 
             if (cl != null)
             {
@@ -520,6 +575,7 @@ namespace SoundsOfNature
                         cl.ForestDensity >= sg.ForestMin && cl.ForestDensity <= sg.ForestMax &&
                         (sg.AllowedTimes.Count   == 0 || sg.AllowedTimes.Contains(timeSlot))   &&
                         (sg.AllowedSeasons.Count == 0 || sg.AllowedSeasons.Contains(season))   &&
+                        (!sg.RequiresOcean || nearOcean) &&
                         (!underground || sg.PlayUnderground) &&
                         (underground || !sg.PlayUnderground))
                     .Select(sg => sg.Label);
@@ -577,6 +633,7 @@ namespace SoundsOfNature
         public List<string> AllowedTimes   = new();
         public List<string> AllowedSeasons = new();
         public bool  PlayUnderground = false;
+        public bool  RequiresOcean   = false; // only fires when saltwater is found near the player at sea level
 
         public float IntervalMin, IntervalMax;
         public float VolumeMin, VolumeMax;
