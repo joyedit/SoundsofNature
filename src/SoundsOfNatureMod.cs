@@ -159,7 +159,7 @@ namespace SoundsOfNature
 
             float  temperature   = climate.Temperature;
             float  rainfall      = climate.Rainfall;
-            float  forestDensity = climate.ForestDensity;
+            float  forestDensity = GetForestDensity(pos);
             string timeSlot      = GetTimeOfDaySlot(capi.World.Calendar.HourOfDay / 24.0);
             string season        = GetSeason(pos);
             long   now           = capi.ElapsedMilliseconds;
@@ -214,6 +214,26 @@ namespace SoundsOfNature
                 PlayRandomSound(sg, enclosureMult, overridePos);
             }
         }
+
+        #region Forest Density
+
+        // ClimateCondition.ForestDensity is only populated by the server-side GetClimateAt;
+        // the client-side implementation leaves it at 0 and no game system fills it in, so a
+        // client-only mod must sample the region's (synced) forest map itself. Same math as
+        // ServerWorldMap.AddWorldGenForestShrub.
+        private float GetForestDensity(BlockPos pos)
+        {
+            var ba = capi.World.BlockAccessor;
+            int regionSize = ba.RegionSize;
+            IMapRegion region = ba.GetMapRegion(pos.X / regionSize, pos.Z / regionSize);
+            if (region?.ForestMap == null || region.ForestMap.Size == 0) return 0f;
+
+            float x = (float)((double)pos.X / regionSize % 1.0);
+            float z = (float)((double)pos.Z / regionSize % 1.0);
+            return region.ForestMap.GetUnpaddedColorLerpedForNormalizedPos(x, z) / 255f;
+        }
+
+        #endregion
 
         #region Ocean Detection
 
@@ -560,9 +580,11 @@ namespace SoundsOfNature
             bool isHighWind  = !underground && windSpeed > HighWindThreshold;
             bool muted       = isRaining || isHighWind;
 
+            float forestDensity = GetForestDensity(pos);
+
             capi.ShowChatMessage($"[SoundsOfNature] {(enabled ? "ON" : "OFF")} | Vol: {masterVolume:F1}x");
             if (cl != null)
-                capi.ShowChatMessage($"  Temp: {cl.Temperature:F1}°C  Rain: {cl.Rainfall:F2}  Forest: {cl.ForestDensity:F2}  Precip: {precip:F2}  Wind: {windSpeed:F2}{(muted ? " (MUTED)" : "")}");
+                capi.ShowChatMessage($"  Temp: {cl.Temperature:F1}°C  Rain: {cl.Rainfall:F2}  Forest: {forestDensity:F2}  Precip: {precip:F2}  Wind: {windSpeed:F2}{(muted ? " (MUTED)" : "")}");
             bool nearOcean = IsOceanNearby(pos, capi.ElapsedMilliseconds);
             capi.ShowChatMessage($"  Time: {timeSlot} ({capi.World.Calendar.HourOfDay:F1}h)  Season: {season}  Location: {locationDesc} (sky {skyLight})  Ocean: {(nearOcean ? "yes" : "no")}");
 
@@ -572,7 +594,7 @@ namespace SoundsOfNature
                     .Where(sg =>
                         cl.Temperature   >= sg.TempMin   && cl.Temperature   <= sg.TempMax   &&
                         cl.Rainfall      >= sg.RainMin   && cl.Rainfall      <= sg.RainMax   &&
-                        cl.ForestDensity >= sg.ForestMin && cl.ForestDensity <= sg.ForestMax &&
+                        forestDensity    >= sg.ForestMin && forestDensity    <= sg.ForestMax &&
                         (sg.AllowedTimes.Count   == 0 || sg.AllowedTimes.Contains(timeSlot))   &&
                         (sg.AllowedSeasons.Count == 0 || sg.AllowedSeasons.Contains(season))   &&
                         (!sg.RequiresOcean || nearOcean) &&

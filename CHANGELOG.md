@@ -2,6 +2,22 @@
 
 All notable changes to Sounds of Nature are documented here.
 
+## [0.7.1]
+
+### Fixed
+- Forest density was always read as 0.00, on every world (thanks to the player
+  report from a TerraPrety world that surfaced this — it was not a worldgen-mod
+  incompatibility, and Sounds of Nature remains fully compatible with TerraPrety
+  and similar worldgen mods). The game only fills in forest density on the
+  server side; on the client it is always 0, so the mod now samples the synced
+  worldgen forest map directly.
+  - Forest-dwelling groups that never played now do: alligators, macaws,
+    howler monkeys, cicadas, elk bugles, and chickadees.
+  - Open-terrain groups (hyenas, lions, weaver birds, rattlesnakes, coyotes,
+    goats, loons, bees, lake ice) no longer incorrectly play inside dense
+    forest.
+  - `.son status` now reports the real forest density.
+
 ## [0.7.0]
 
 ### Added
