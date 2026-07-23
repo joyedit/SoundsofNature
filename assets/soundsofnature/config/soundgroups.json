@@ -692,7 +692,7 @@
         "timeOfDay": ["dawn", "morning", "midday", "afternoon"],
         "seasons":   []
       },
-      "intervalSeconds": { "min": 60, "max": 160 },
+      "intervalSeconds": { "min": 240, "max": 600 },
       "volume":          { "min": 0.02,"max": 0.119},
       "pitchVariance": 0.07,
       "maxConcurrent": 1,
@@ -837,6 +837,7 @@
         "sounds/ambient/seagull_call4"
       ],
       "requiresOcean": true,
+      "playInHighWind": true,
       "conditions": {
         "temperature":   { "min": -5,  "max": 45  },
         "rainfall":      { "min": 0.0, "max": 1.0 },

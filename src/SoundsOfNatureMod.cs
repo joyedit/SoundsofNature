@@ -84,6 +84,7 @@ namespace SoundsOfNature
                         Weight         = g["weight"]?.Value<int>() ?? 5,
                         PlayUnderground = g["playUnderground"]?.Value<bool>() ?? false,
                         RequiresOcean   = g["requiresOcean"]?.Value<bool>() ?? false,
+                        PlayInHighWind  = g["playInHighWind"]?.Value<bool>() ?? false,
                         ProximityEntities      = g["proximityEntities"]?.ToObject<List<string>>()      ?? new List<string>(),
                         ProximityParticleTypes = g["proximityParticleTypes"]?.ToObject<List<string>>() ?? new List<string>(),
                         ProximityRange         = g["proximityRange"]?.Value<float>()                   ?? 12f,
@@ -134,23 +135,25 @@ namespace SoundsOfNature
             bool enclosed      = !underground && skyLight < OutdoorSkylightMin;
             float enclosureMult = enclosed ? EnclosedVolumeMult : 1.0f;
 
-            // Suppress all outdoor animal sounds during rain, storms, or high winds (hurricanes).
-            // Note this is a flag, not an early return: the scheduling loop below still runs so each
+            // Suppress outdoor animal sounds during rain/storms, and most of them in high winds
+            // (hurricanes) — groups with playInHighWind (e.g. seagulls) stay audible in wind.
+            // Note these are flags, not an early return: the scheduling loop below still runs so each
             // due group rolls its timer forward. Returning here would freeze every timer for the whole
             // storm, then dump all the backed-up groups in one tick the moment the weather cleared.
-            bool weatherMuted = false;
+            bool rainMuted = false;
+            bool windMuted = false;
             if (!underground)
             {
                 var weatherSys = capi.ModLoader.GetModSystem<WeatherSystemClient>();
                 if (weatherSys?.clientClimateCond?.Rainfall > 0.04f)
                 {
-                    weatherMuted = true;
+                    rainMuted = true;
                 }
                 else
                 {
                     Vec3d wind = capi.World.BlockAccessor.GetWindSpeedAt(pos);
                     if (wind != null && wind.Length() > HighWindThreshold)
-                        weatherMuted = true;
+                        windMuted = true;
                 }
             }
 
@@ -176,7 +179,8 @@ namespace SoundsOfNature
                 ScheduleNext(sg, now);
 
                 // Timer has been advanced above; now honor the weather suppression without playing.
-                if (weatherMuted) continue;
+                if (rainMuted) continue;
+                if (windMuted && !sg.PlayInHighWind) continue;
 
                 if (activeCounts.GetValueOrDefault(sg.Id, 0) >= sg.MaxConcurrent) continue;
 
@@ -545,6 +549,11 @@ namespace SoundsOfNature
                         ShowNearbyEntities((float)args[0]);
                         return TextCommandResult.Success();
                     })
+                .EndSubCommand()
+                .BeginSubCommand("play")
+                    .WithDescription("Force-play a sound group now, ignoring all conditions (testing). No arg = list group ids")
+                    .WithArgs(parsers.OptionalWord("groupId"))
+                    .HandleWith(OnCmdPlay)
                 .EndSubCommand();
         }
 
@@ -556,6 +565,25 @@ namespace SoundsOfNature
 
             masterVolume = vol;
             return TextCommandResult.Success($"[SoundsOfNature] Master volume set to {masterVolume:F1}");
+        }
+
+        private TextCommandResult OnCmdPlay(TextCommandCallingArgs args)
+        {
+            string id = args[0] as string;
+            if (string.IsNullOrEmpty(id))
+            {
+                string all = string.Join(", ", soundGroups.OrderBy(sg => sg.Id).Select(sg => sg.Id));
+                return TextCommandResult.Success($"[SoundsOfNature] Usage: .son play <groupId>\nGroups: {all}");
+            }
+
+            var group = soundGroups.FirstOrDefault(sg => sg.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+            if (group == null)
+                return TextCommandResult.Error($"[SoundsOfNature] Unknown group '{id}'. Run .son play with no argument to list groups.");
+
+            // Bypasses every gate (time, season, climate, weather mute, proximity, maxConcurrent)
+            // so any group can be auditioned anywhere. Uses the normal random offset/volume path.
+            PlayRandomSound(group, 1.0f, null);
+            return TextCommandResult.Success($"[SoundsOfNature] Playing '{group.Id}' — {group.Label} ({group.Sounds.Count} clips, random pick).");
         }
 
         private void ShowStatus()
@@ -577,14 +605,14 @@ namespace SoundsOfNature
             Vec3d windVec = capi.World.BlockAccessor.GetWindSpeedAt(pos);
             float windSpeed = (float)(windVec?.Length() ?? 0.0);
             bool isRaining   = !underground && precip > 0.04f;
-            bool isHighWind  = !underground && windSpeed > HighWindThreshold;
-            bool muted       = isRaining || isHighWind;
+            bool isHighWind  = !underground && !isRaining && windSpeed > HighWindThreshold;
+            string mutedDesc = isRaining ? " (MUTED: rain)" : isHighWind ? " (MUTED: wind, except wind-tolerant groups)" : "";
 
             float forestDensity = GetForestDensity(pos);
 
             capi.ShowChatMessage($"[SoundsOfNature] {(enabled ? "ON" : "OFF")} | Vol: {masterVolume:F1}x");
             if (cl != null)
-                capi.ShowChatMessage($"  Temp: {cl.Temperature:F1}°C  Rain: {cl.Rainfall:F2}  Forest: {forestDensity:F2}  Precip: {precip:F2}  Wind: {windSpeed:F2}{(muted ? " (MUTED)" : "")}");
+                capi.ShowChatMessage($"  Temp: {cl.Temperature:F1}°C  Rain: {cl.Rainfall:F2}  Forest: {forestDensity:F2}  Precip: {precip:F2}  Wind: {windSpeed:F2}{mutedDesc}");
             bool nearOcean = IsOceanNearby(pos, capi.ElapsedMilliseconds);
             capi.ShowChatMessage($"  Time: {timeSlot} ({capi.World.Calendar.HourOfDay:F1}h)  Season: {season}  Location: {locationDesc} (sky {skyLight})  Ocean: {(nearOcean ? "yes" : "no")}");
 
@@ -656,6 +684,7 @@ namespace SoundsOfNature
         public List<string> AllowedSeasons = new();
         public bool  PlayUnderground = false;
         public bool  RequiresOcean   = false; // only fires when saltwater is found near the player at sea level
+        public bool  PlayInHighWind  = false; // exempt from the high-wind mute (still muted by rain)
 
         public float IntervalMin, IntervalMax;
         public float VolumeMin, VolumeMax;
