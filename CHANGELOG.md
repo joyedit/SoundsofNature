@@ -2,6 +2,11 @@
 
 All notable changes to Sounds of Nature are documented here.
 
+## 0.7.4 — 2026-07-25
+
+- Packaging release: the mod zip is now named with its version number
+  (`SoundsOfNature-0.7.4.zip`) as required for ModDB uploads. No code changes.
+
 ## 0.7.3 — 2026-07-23
 
 - Compatibility release for Vintage Story 1.22.5. Rebuilt against the 1.22.5
