@@ -2,6 +2,41 @@
 
 All notable changes to Sounds of Nature are documented here.
 
+## 0.8.2 — 2026-09-21
+
+### Added
+- Underwater awareness: when your head goes below the surface, wildlife falls
+  silent — no new sounds start, and anything already playing fades out within a
+  fraction of a second, then fades back in when you surface. Wading, swimming at
+  the surface, and standing in shallow or flowing water sound normal.
+- Temporal storm sounds stay faintly audible underwater (about a third volume).
+- `.son status` shows "UNDERWATER" and drops wildlife from the eligible list
+  while submerged.
+
+## 0.8.1 — 2026-09-20
+
+### Fixed
+- The `rainfall` condition was matched against live precipitation instead of the
+  biome's wetness (the weather system overwrites `Rainfall` on a `NowValues`
+  climate read; the mod now uses `WorldgenRainfall`). Thirteen wet-biome groups
+  could never play at all — loons, alligators, macaws, howler monkeys, the frog
+  and cricket groups, cicadas, bees, elk bugles — and the dry-biome groups
+  (hyenas, lions, weaver birds, rattlesnakes, coyotes, goats) were playing in
+  jungles and swamps. Both now behave as their conditions describe.
+- `.son status` shows biome wetness under "Rain" and live rain under "Precip".
+
+## 0.8.0 — 2026-07-25
+
+- Temporal storms now have their own horror soundscape: low growls, distant
+  guttural chatter, grinding stone, vast bellowing roars, and unsettling
+  whispers play while a storm rages.
+- Normal wildlife falls silent during a temporal storm; the storm groups take
+  over, and they play everywhere — outdoors, indoors, and deep underground —
+  unaffected by rain or wind mutes.
+- New `duringTemporalStorm` flag available in `soundgroups.json`.
+- `.son status` now reports whether a temporal storm is active.
+- Also verified against Vintage Story 1.22.7 and rebuilt against its assemblies.
+
 ## 0.7.4 — 2026-07-25
 
 - Packaging release: the mod zip is now named with its version number

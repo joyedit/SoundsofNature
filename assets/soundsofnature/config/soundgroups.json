@@ -869,6 +869,65 @@
       "pitchVariance": 0.05,
       "maxConcurrent": 1,
       "weight": 5
+    },
+    {
+      "id": "temporal_growls",
+      "label": "Temporal Storm Growls",
+      "sounds": [
+        "sounds/ambient/temporal_growl1",
+        "sounds/ambient/temporal_growl2",
+        "sounds/ambient/temporal_growl3",
+        "sounds/ambient/temporal_guttural1"
+      ],
+      "duringTemporalStorm": true,
+      "intervalSeconds": { "min": 14, "max": 38 },
+      "volume":          { "min": 0.05,"max": 0.187},
+      "pitchVariance": 0.06,
+      "maxConcurrent": 2,
+      "weight": 7
+    },
+    {
+      "id": "temporal_grinding",
+      "label": "Temporal Storm Grinding",
+      "sounds": [
+        "sounds/ambient/temporal_grinding1",
+        "sounds/ambient/temporal_grinding2",
+        "sounds/ambient/temporal_grinding3"
+      ],
+      "duringTemporalStorm": true,
+      "intervalSeconds": { "min": 18, "max": 45 },
+      "volume":          { "min": 0.04,"max": 0.153},
+      "pitchVariance": 0.08,
+      "maxConcurrent": 1,
+      "burst": { "min": 1, "max": 2 },
+      "weight": 5
+    },
+    {
+      "id": "temporal_roars",
+      "label": "Temporal Storm Roars",
+      "sounds": [
+        "sounds/ambient/temporal_roar1",
+        "sounds/ambient/temporal_roar2"
+      ],
+      "duringTemporalStorm": true,
+      "intervalSeconds": { "min": 45, "max": 110 },
+      "volume":          { "min": 0.06,"max": 0.221},
+      "pitchVariance": 0.04,
+      "maxConcurrent": 1,
+      "weight": 5
+    },
+    {
+      "id": "temporal_whispers",
+      "label": "Temporal Storm Whispers",
+      "sounds": [
+        "sounds/ambient/temporal_whisper1"
+      ],
+      "duringTemporalStorm": true,
+      "intervalSeconds": { "min": 40, "max": 100 },
+      "volume":          { "min": 0.03,"max": 0.119},
+      "pitchVariance": 0.05,
+      "maxConcurrent": 1,
+      "weight": 4
     }
   ]
 }

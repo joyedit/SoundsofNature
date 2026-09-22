@@ -20,6 +20,9 @@ namespace SoundsOfNature
         private Dictionary<string, int> activeCounts = new();
         private Random rng = new();
         private long tickListenerId;
+        private long submergeListenerId;
+        private readonly List<LiveSound> liveSounds = new();
+        private bool submerged;
         private float masterVolume = 1.0f;
         private bool enabled = true;
         private const float HighWindThreshold = 0.5f;
@@ -28,6 +31,8 @@ namespace SoundsOfNature
         private const int   OutdoorSkylightMin     = 10; // ≥ this = outdoors, full volume
         private const int   UndergroundSkylightMax = 3;  // < this = true cave/underground
         private const float EnclosedVolumeMult     = 0.4f; // multiplier when skylight is 3–9
+        private const float UnderwaterStormMult    = 0.35f; // temporal storm sounds stay faintly audible underwater
+        private const float UnderwaterFadeSeconds  = 0.3f;  // how fast sounds duck when the player's head goes under
 
         public override void StartClientSide(ICoreClientAPI api)
         {
@@ -35,13 +40,19 @@ namespace SoundsOfNature
             LoadSoundGroups();
             RegisterCommands();
             tickListenerId = capi.Event.RegisterGameTickListener(OnGameTick, 2000);
+            // Separate, faster check so already-playing sounds duck promptly when the player dives,
+            // rather than waiting up to two seconds for the main tick.
+            submergeListenerId = capi.Event.RegisterGameTickListener(OnSubmergeTick, 250);
             capi.Logger.Notification("[SoundsOfNature] Loaded {0} sound groups.", soundGroups.Count);
         }
 
         public override void Dispose()
         {
             if (capi != null)
+            {
                 capi.Event.UnregisterGameTickListener(tickListenerId);
+                capi.Event.UnregisterGameTickListener(submergeListenerId);
+            }
             base.Dispose();
         }
 
@@ -85,6 +96,7 @@ namespace SoundsOfNature
                         PlayUnderground = g["playUnderground"]?.Value<bool>() ?? false,
                         RequiresOcean   = g["requiresOcean"]?.Value<bool>() ?? false,
                         PlayInHighWind  = g["playInHighWind"]?.Value<bool>() ?? false,
+                        DuringTemporalStorm = g["duringTemporalStorm"]?.Value<bool>() ?? false,
                         ProximityEntities      = g["proximityEntities"]?.ToObject<List<string>>()      ?? new List<string>(),
                         ProximityParticleTypes = g["proximityParticleTypes"]?.ToObject<List<string>>() ?? new List<string>(),
                         ProximityRange         = g["proximityRange"]?.Value<float>()                   ?? 12f,
@@ -157,11 +169,20 @@ namespace SoundsOfNature
                 }
             }
 
+            bool stormActive = IsTemporalStormActive();
+            OnSubmergeTick(0); // refresh the underwater flag (and duck live sounds) before gating
+
             ClimateCondition climate = capi.World.BlockAccessor.GetClimateAt(pos, EnumGetClimateMode.NowValues);
             if (climate == null) return;
 
             float  temperature   = climate.Temperature;
-            float  rainfall      = climate.Rainfall;
+            // WorldgenRainfall, not Rainfall: with NowValues the weather system's OnGetClimate
+            // handler replaces Rainfall with the current precipitation level (0 when dry), while
+            // WorldgenRainfall keeps the map's annual wetness the soundgroup conditions describe.
+            // Using Rainfall here made every group with a rainfall.min above the rain-mute
+            // threshold (0.04) unreachable: it could only pass the gate while rain was falling,
+            // and falling rain had already muted it.
+            float  rainfall      = climate.WorldgenRainfall;
             float  forestDensity = GetForestDensity(pos);
             string timeSlot      = GetTimeOfDaySlot(capi.World.Calendar.HourOfDay / 24.0);
             string season        = GetSeason(pos);
@@ -178,15 +199,26 @@ namespace SoundsOfNature
                 // blaring together on the first tick of dusk. Rescheduling here keeps them staggered.
                 ScheduleNext(sg, now);
 
-                // Timer has been advanced above; now honor the weather suppression without playing.
-                if (rainMuted) continue;
-                if (windMuted && !sg.PlayInHighWind) continue;
+                // Temporal storms invert the soundscape: normal wildlife falls silent, storm-only
+                // groups take over. Storm groups ignore weather mutes and the indoor/outdoor lock —
+                // the storm's presence is felt everywhere, caves included.
+                if (stormActive != sg.DuringTemporalStorm) continue;
+
+                if (!sg.DuringTemporalStorm)
+                {
+                    // Timer has been advanced above; now honor the weather suppression without playing.
+                    if (rainMuted) continue;
+                    if (windMuted && !sg.PlayInHighWind) continue;
+                    // Wildlife can't be heard with your head underwater. Same flag-not-return
+                    // treatment as the weather mutes, so timers keep rolling while submerged.
+                    if (submerged) continue;
+                }
 
                 if (activeCounts.GetValueOrDefault(sg.Id, 0) >= sg.MaxConcurrent) continue;
 
                 // Proximity-driven groups follow their target (cave or surface), so skip the indoor/outdoor lock.
                 bool isProximity = sg.ProximityEntities.Count > 0 || sg.ProximityParticleTypes.Count > 0;
-                if (!isProximity)
+                if (!isProximity && !sg.DuringTemporalStorm)
                 {
                     if (underground && !sg.PlayUnderground) continue;
                     if (!underground && sg.PlayUnderground) continue;
@@ -215,7 +247,8 @@ namespace SoundsOfNature
                     if (overridePos == null) continue;
                 }
 
-                PlayRandomSound(sg, enclosureMult, overridePos);
+                // Storm sounds are otherworldly — no enclosure attenuation, they're "in your head".
+                PlayRandomSound(sg, sg.DuringTemporalStorm ? 1.0f : enclosureMult, overridePos);
             }
         }
 
@@ -287,6 +320,25 @@ namespace SoundsOfNature
             }
 
             return false;
+        }
+
+        #endregion
+
+        #region Temporal Storm
+
+        private SystemTemporalStability stabilityCache;
+        private bool stabilityLookedUp;
+
+        private bool IsTemporalStormActive()
+        {
+            // GetModSystem is a dictionary walk; look it up once. The system is absent when
+            // temporal stability is disabled in the world config, so remember the null too.
+            if (!stabilityLookedUp)
+            {
+                stabilityCache = capi.ModLoader.GetModSystem<SystemTemporalStability>();
+                stabilityLookedUp = true;
+            }
+            return stabilityCache?.StormData?.nowStormActive == true;
         }
 
         #endregion
@@ -397,7 +449,8 @@ namespace SoundsOfNature
             // relative to the player — no need to fake "farther = quieter" here. This volume is
             // just the source's intrinsic loudness, varied uniformly within the group's range.
             float t = (float)rng.NextDouble();
-            float volume = (sg.VolumeMin + t * (sg.VolumeMax - sg.VolumeMin)) * masterVolume * enclosureMult;
+            float baseVolume = (sg.VolumeMin + t * (sg.VolumeMax - sg.VolumeMin)) * masterVolume * enclosureMult;
+            float volume     = baseVolume * UnderwaterMult(sg.DuringTemporalStorm);
 
             Vec3d soundPos;
             if (overridePos != null)
@@ -445,6 +498,9 @@ namespace SoundsOfNature
                 sound.Start();
                 sound.FadeTo(volume, FadeInSeconds, null);
 
+                var live = new LiveSound { Sound = sound, BaseVolume = baseVolume, IsStorm = sg.DuringTemporalStorm };
+                liveSounds.Add(live);
+
                 // A LoadSound'd one-shot is ours to clean up. Tear it down shortly after the clip
                 // finishes (with a fixed fallback when the decoded length isn't known yet).
                 float lenSec = sound.SoundLengthSeconds;
@@ -452,6 +508,7 @@ namespace SoundsOfNature
                 capi.Event.RegisterCallback(_ =>
                 {
                     activeCounts[sg.Id] = Math.Max(0, activeCounts.GetValueOrDefault(sg.Id, 0) - 1);
+                    liveSounds.Remove(live);
                     if (!sound.IsDisposed) sound.Dispose();
                 }, lifeMs);
             }
@@ -460,6 +517,56 @@ namespace SoundsOfNature
                 capi.Logger.Debug("[SoundsOfNature] Could not play sound {0}: {1}", soundPath, ex.Message);
                 activeCounts[sg.Id] = Math.Max(0, activeCounts.GetValueOrDefault(sg.Id, 0) - 1);
             }
+        }
+
+        #endregion
+
+        #region Underwater
+
+        // Eye-level fluid check rather than Swimming/FeetInLiquid, so wading or floating at the
+        // surface still sounds normal — only a submerged head mutes the world above.
+        private bool IsHeadSubmerged(Entity player)
+        {
+            double eyeY = player.Pos.Y + player.LocalEyePos.Y;
+            BlockPos eyePos = new BlockPos((int)Math.Floor(player.Pos.X), (int)Math.Floor(eyeY), (int)Math.Floor(player.Pos.Z), player.Pos.Dimension);
+            Block fluid = capi.World.BlockAccessor.GetBlock(eyePos, BlockLayersAccess.Fluid);
+            if (fluid == null || !fluid.IsLiquid()) return false;
+
+            // Flowing water only fills part of its block (LiquidLevel 1–7 of 7).
+            double fill = Math.Max(1, fluid.LiquidLevel) / 7.0;
+            return eyeY - eyePos.Y < fill;
+        }
+
+        private float UnderwaterMult(bool isStorm) => !submerged ? 1f : isStorm ? UnderwaterStormMult : 0f;
+
+        private void OnSubmergeTick(float dt)
+        {
+            var player = capi.World.Player?.Entity;
+            if (player == null) return;
+
+            bool now = IsHeadSubmerged(player);
+            if (now == submerged) return;
+            submerged = now;
+
+            // Duck (or restore) everything already playing. FadeTo cancels any fade still in flight,
+            // including a sound's initial fade-in. It clamps to a 0.01 floor, so finish muted
+            // sounds off at true silence once the fade lands.
+            foreach (var live in liveSounds)
+            {
+                if (live.Sound.IsDisposed) continue;
+                float target = live.BaseVolume * UnderwaterMult(live.IsStorm);
+                live.Sound.FadeTo(target, UnderwaterFadeSeconds, target > 0f ? null : s =>
+                {
+                    if (submerged && !s.IsDisposed) s.SetVolume(0f);
+                });
+            }
+        }
+
+        private class LiveSound
+        {
+            public ILoadedSound Sound;
+            public float        BaseVolume; // pre-underwater volume, restored on surfacing
+            public bool         IsStorm;
         }
 
         #endregion
@@ -599,6 +706,8 @@ namespace SoundsOfNature
             bool   underground  = skyLight < UndergroundSkylightMax;
             bool   enclosed     = !underground && skyLight < OutdoorSkylightMin;
             string locationDesc = underground ? "underground" : enclosed ? $"enclosed (×{EnclosedVolumeMult:F1})" : "outdoors";
+            bool   underwater   = IsHeadSubmerged(player);
+            if (underwater) locationDesc += ", UNDERWATER (wildlife muted)";
 
             var ws = capi.ModLoader.GetModSystem<WeatherSystemClient>();
             float precip = ws?.clientClimateCond?.Rainfall ?? 0f;
@@ -612,22 +721,26 @@ namespace SoundsOfNature
 
             capi.ShowChatMessage($"[SoundsOfNature] {(enabled ? "ON" : "OFF")} | Vol: {masterVolume:F1}x");
             if (cl != null)
-                capi.ShowChatMessage($"  Temp: {cl.Temperature:F1}°C  Rain: {cl.Rainfall:F2}  Forest: {forestDensity:F2}  Precip: {precip:F2}  Wind: {windSpeed:F2}{mutedDesc}");
+                capi.ShowChatMessage($"  Temp: {cl.Temperature:F1}°C  Rain: {cl.WorldgenRainfall:F2}  Forest: {forestDensity:F2}  Precip: {precip:F2}  Wind: {windSpeed:F2}{mutedDesc}");
             bool nearOcean = IsOceanNearby(pos, capi.ElapsedMilliseconds);
-            capi.ShowChatMessage($"  Time: {timeSlot} ({capi.World.Calendar.HourOfDay:F1}h)  Season: {season}  Location: {locationDesc} (sky {skyLight})  Ocean: {(nearOcean ? "yes" : "no")}");
+            bool stormActive = IsTemporalStormActive();
+            capi.ShowChatMessage($"  Time: {timeSlot} ({capi.World.Calendar.HourOfDay:F1}h)  Season: {season}  Location: {locationDesc} (sky {skyLight})  Ocean: {(nearOcean ? "yes" : "no")}  Temporal storm: {(stormActive ? "ACTIVE" : "no")}");
 
             if (cl != null)
             {
                 var eligible = soundGroups
                     .Where(sg =>
+                        sg.DuringTemporalStorm == stormActive &&
                         cl.Temperature   >= sg.TempMin   && cl.Temperature   <= sg.TempMax   &&
-                        cl.Rainfall      >= sg.RainMin   && cl.Rainfall      <= sg.RainMax   &&
+                        cl.WorldgenRainfall >= sg.RainMin && cl.WorldgenRainfall <= sg.RainMax &&
                         forestDensity    >= sg.ForestMin && forestDensity    <= sg.ForestMax &&
                         (sg.AllowedTimes.Count   == 0 || sg.AllowedTimes.Contains(timeSlot))   &&
                         (sg.AllowedSeasons.Count == 0 || sg.AllowedSeasons.Contains(season))   &&
                         (!sg.RequiresOcean || nearOcean) &&
-                        (!underground || sg.PlayUnderground) &&
-                        (underground || !sg.PlayUnderground))
+                        (!underwater || sg.DuringTemporalStorm) &&
+                        (sg.DuringTemporalStorm ||
+                            ((!underground || sg.PlayUnderground) &&
+                             (underground || !sg.PlayUnderground))))
                     .Select(sg => sg.Label);
 
                 capi.ShowChatMessage($"  Eligible: {string.Join(", ", eligible)}");
@@ -685,6 +798,7 @@ namespace SoundsOfNature
         public bool  PlayUnderground = false;
         public bool  RequiresOcean   = false; // only fires when saltwater is found near the player at sea level
         public bool  PlayInHighWind  = false; // exempt from the high-wind mute (still muted by rain)
+        public bool  DuringTemporalStorm = false; // only during temporal storms; normal groups are silenced while one rages
 
         public float IntervalMin, IntervalMax;
         public float VolumeMin, VolumeMax;
