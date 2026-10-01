@@ -2,6 +2,31 @@
 
 All notable changes to Sounds of Nature are documented here.
 
+## 0.8.3 — 2026-09-30
+
+### Added
+- **Per-player settings file** at `VintagestoryData/ModConfig/soundsofnature.json`.
+  It lists every sound group by id and label, and gives each one three knobs:
+  `enabled`, `volume` (multiplier) and `spacing` (how much rarer to play it).
+  Unlike `soundgroups.json` inside the mod zip, this file is yours — it is never
+  overwritten by a mod update, and new groups are added to it automatically.
+- New commands so nobody has to open a file at all:
+  - `.son groups` — every group id, label, and your current settings for it
+  - `.son mute <id>` / `.son unmute <id>` — silence one group (`all` also works)
+  - `.son gvol <id> <n>` — volume multiplier for one group, e.g. `0.3`
+  - `.son gspace <id> <n>` — play one group n times less often, e.g. `3`
+  - `.son space <n>` — space out *every* sound by n
+  - `.son reset <id>` / `.son reset all` — back to the mod defaults
+  - `.son config` — where the settings file is and what's overridden
+- `.son on`, `.son off` and `.son vol` now persist across restarts, and
+  `.son reload` re-reads the settings file as well as `soundgroups.json`.
+
+### Changed
+- Cicadas toned down after player feedback that they were piercing and
+  incessant: quieter (max volume 0.119 → 0.085), less frequent (interval
+  20–58s → 45–120s), and no longer able to overlap themselves
+  (`maxConcurrent` 2 → 1).
+
 ## 0.8.2 — 2026-09-21
 
 ### Added

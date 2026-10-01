@@ -4,6 +4,7 @@ using System.Linq;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Common.Entities;
+using Vintagestory.API.Config;
 using Vintagestory.API.MathTools;
 using Vintagestory.API.Util;
 using Vintagestory.GameContent;
@@ -23,8 +24,7 @@ namespace SoundsOfNature
         private long submergeListenerId;
         private readonly List<LiveSound> liveSounds = new();
         private bool submerged;
-        private float masterVolume = 1.0f;
-        private bool enabled = true;
+        private SoundsOfNatureConfig config = new();
         private const float HighWindThreshold = 0.5f;
         private const float FadeInSeconds      = 0.35f; // quick, gentle ramp-up at the start of each sound
         private const float IntervalMultiplier = 1.6f;  // global spacing knob: >1 spreads sounds further apart (fewer per minute)
@@ -38,12 +38,15 @@ namespace SoundsOfNature
         {
             capi = api;
             LoadSoundGroups();
+            LoadUserConfig();
             RegisterCommands();
             tickListenerId = capi.Event.RegisterGameTickListener(OnGameTick, 2000);
             // Separate, faster check so already-playing sounds duck promptly when the player dives,
             // rather than waiting up to two seconds for the main tick.
             submergeListenerId = capi.Event.RegisterGameTickListener(OnSubmergeTick, 250);
-            capi.Logger.Notification("[SoundsOfNature] Loaded {0} sound groups.", soundGroups.Count);
+            int muted = soundGroups.Count(sg => !sg.UserEnabled);
+            capi.Logger.Notification("[SoundsOfNature] Loaded {0} sound groups ({1} muted by player config).",
+                soundGroups.Count, muted);
         }
 
         public override void Dispose()
@@ -127,13 +130,69 @@ namespace SoundsOfNature
             }
         }
 
+        /// <summary>
+        /// Reads (or creates) ModConfig/soundsofnature.json and folds it onto the loaded groups.
+        /// The file always lists every group the mod ships, so a player can see the exact ids to
+        /// tweak without opening the mod zip.
+        /// </summary>
+        private void LoadUserConfig()
+        {
+            try
+            {
+                config = capi.LoadModConfig<SoundsOfNatureConfig>(SoundsOfNatureConfig.FileName)
+                         ?? new SoundsOfNatureConfig();
+            }
+            catch (Exception ex)
+            {
+                // A malformed file must not take the mod down with it — fall back to defaults and
+                // leave the broken file on disk so the player can fix their own typo.
+                capi.Logger.Warning("[SoundsOfNature] Could not read {0} ({1}); using defaults. The file was left untouched.",
+                    SoundsOfNatureConfig.FileName, ex.Message);
+                config = new SoundsOfNatureConfig();
+                ApplyUserConfig();
+                return;
+            }
+
+            bool changed = config.SyncWith(soundGroups.Select(sg => (sg.Id, sg.Label)));
+            ApplyUserConfig();
+            if (changed) SaveUserConfig();
+        }
+
+        private void SaveUserConfig()
+        {
+            try
+            {
+                capi.StoreModConfig(config, SoundsOfNatureConfig.FileName);
+            }
+            catch (Exception ex)
+            {
+                capi.Logger.Warning("[SoundsOfNature] Could not save {0}: {1}", SoundsOfNatureConfig.FileName, ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Resolves the player's overrides into plain fields on each group, so the 2-second tick
+        /// and the sound-spawning path never touch the dictionary.
+        /// </summary>
+        private void ApplyUserConfig()
+        {
+            config.Clamp();
+            foreach (var sg in soundGroups)
+            {
+                GroupSettings gs = config.ForGroup(sg.Id);
+                sg.UserEnabled = gs?.Enabled ?? true;
+                sg.UserVolume  = gs?.Volume  ?? 1.0f;
+                sg.UserSpacing = gs?.Spacing ?? 1.0f;
+            }
+        }
+
         #endregion
 
         #region Game Tick
 
         private void OnGameTick(float dt)
         {
-            if (!enabled) return;
+            if (!config.Enabled) return;
 
             var player = capi.World.Player?.Entity;
             if (player == null) return;
@@ -198,6 +257,11 @@ namespace SoundsOfNature
                 // its window opens. With every night group due at once, that meant all of them
                 // blaring together on the first tick of dusk. Rescheduling here keeps them staggered.
                 ScheduleNext(sg, now);
+
+                // A group the player muted in their own config keeps rolling its timer forward
+                // (same reason as above), so unmuting mid-session doesn't dump a backlog of
+                // overdue groups into one tick.
+                if (!sg.UserEnabled) continue;
 
                 // Temporal storms invert the soundscape: normal wildlife falls silent, storm-only
                 // groups take over. Storm groups ignore weather mutes and the indoor/outdoor lock —
@@ -414,7 +478,11 @@ namespace SoundsOfNature
             // Higher weight → shorter interval → plays more frequently.
             // Weight 5 is baseline (×1.0). Weight 10 = ×0.5, weight 2 = ×2.5.
             float weightFactor = Math.Clamp(5.0f / sg.Weight, 0.2f, 5.0f);
-            float interval = (sg.IntervalMin + (float)(rng.NextDouble() * (sg.IntervalMax - sg.IntervalMin))) * weightFactor * IntervalMultiplier;
+            // UserSpacing/GlobalSpacing are the player's own knobs: >1 stretches the gap so the
+            // group is heard less often, which is the least destructive way to tame a sound that
+            // someone finds too frequent without silencing it outright.
+            float interval = (sg.IntervalMin + (float)(rng.NextDouble() * (sg.IntervalMax - sg.IntervalMin)))
+                             * weightFactor * IntervalMultiplier * sg.UserSpacing * config.GlobalSpacing;
             sg.NextPlayTime = now + (long)(interval * 1000);
         }
 
@@ -449,7 +517,8 @@ namespace SoundsOfNature
             // relative to the player — no need to fake "farther = quieter" here. This volume is
             // just the source's intrinsic loudness, varied uniformly within the group's range.
             float t = (float)rng.NextDouble();
-            float baseVolume = (sg.VolumeMin + t * (sg.VolumeMax - sg.VolumeMin)) * masterVolume * enclosureMult;
+            float baseVolume = (sg.VolumeMin + t * (sg.VolumeMax - sg.VolumeMin))
+                               * sg.UserVolume * config.MasterVolume * enclosureMult;
             float volume     = baseVolume * UnderwaterMult(sg.DuringTemporalStorm);
 
             Vec3d soundPos;
@@ -614,7 +683,8 @@ namespace SoundsOfNature
                     .WithDescription("Enable ambient sounds")
                     .HandleWith(_ =>
                     {
-                        enabled = true;
+                        config.Enabled = true;
+                        SaveUserConfig();
                         return TextCommandResult.Success("[SoundsOfNature] Enabled.");
                     })
                 .EndSubCommand()
@@ -622,7 +692,8 @@ namespace SoundsOfNature
                     .WithDescription("Disable ambient sounds")
                     .HandleWith(_ =>
                     {
-                        enabled = false;
+                        config.Enabled = false;
+                        SaveUserConfig();
                         return TextCommandResult.Success("[SoundsOfNature] Disabled.");
                     })
                 .EndSubCommand()
@@ -633,11 +704,12 @@ namespace SoundsOfNature
                     .HandleWith(OnCmdVolume)
                 .EndSubCommand()
                 .BeginSubCommand("reload")
-                    .WithDescription("Reload soundgroups.json")
+                    .WithDescription("Reload soundgroups.json and your ModConfig settings")
                     .HandleWith(_ =>
                     {
                         LoadSoundGroups();
-                        return TextCommandResult.Success($"[SoundsOfNature] Reloaded {soundGroups.Count} sound groups.");
+                        LoadUserConfig();
+                        return TextCommandResult.Success($"[SoundsOfNature] Reloaded {soundGroups.Count} sound groups and {SoundsOfNatureConfig.FileName}.");
                     })
                 .EndSubCommand()
                 .BeginSubCommand("status")
@@ -661,6 +733,56 @@ namespace SoundsOfNature
                     .WithDescription("Force-play a sound group now, ignoring all conditions (testing). No arg = list group ids")
                     .WithArgs(parsers.OptionalWord("groupId"))
                     .HandleWith(OnCmdPlay)
+                .EndSubCommand()
+                .BeginSubCommand("groups")
+                    .WithAlias("list")
+                    .WithDescription("List every sound group id, its label, and your current settings for it")
+                    .HandleWith(_ =>
+                    {
+                        ShowGroups();
+                        return TextCommandResult.Success();
+                    })
+                .EndSubCommand()
+                .BeginSubCommand("mute")
+                    .WithDescription("Silence one sound group, e.g. .son mute cicadas (or 'all')")
+                    .WithArgs(parsers.Word("groupId"))
+                    .HandleWith(args => OnCmdMute(args, false))
+                .EndSubCommand()
+                .BeginSubCommand("unmute")
+                    .WithDescription("Un-silence one sound group, e.g. .son unmute cicadas (or 'all')")
+                    .WithArgs(parsers.Word("groupId"))
+                    .HandleWith(args => OnCmdMute(args, true))
+                .EndSubCommand()
+                .BeginSubCommand("gvol")
+                    .WithAlias("groupvol")
+                    .WithDescription("Volume multiplier for one group, 0.0-2.0. e.g. .son gvol cicadas 0.3")
+                    .WithArgs(parsers.Word("groupId"), parsers.Float("multiplier"))
+                    .HandleWith(OnCmdGroupVolume)
+                .EndSubCommand()
+                .BeginSubCommand("gspace")
+                    .WithAlias("groupspacing")
+                    .WithDescription("How much rarer one group should be, 0.1-20. 3 = a third as often. e.g. .son gspace cicadas 3")
+                    .WithArgs(parsers.Word("groupId"), parsers.Float("multiplier"))
+                    .HandleWith(OnCmdGroupSpacing)
+                .EndSubCommand()
+                .BeginSubCommand("space")
+                    .WithAlias("spacing")
+                    .WithDescription("How much rarer ALL sounds should be, 0.1-20. 2 = everything half as often")
+                    .WithArgs(parsers.Float("multiplier"))
+                    .HandleWith(OnCmdGlobalSpacing)
+                .EndSubCommand()
+                .BeginSubCommand("reset")
+                    .WithDescription("Restore default settings for one group, or 'all' for everything")
+                    .WithArgs(parsers.OptionalWord("groupId"))
+                    .HandleWith(OnCmdReset)
+                .EndSubCommand()
+                .BeginSubCommand("config")
+                    .WithDescription("Show where your settings file lives and what's currently overridden")
+                    .HandleWith(_ =>
+                    {
+                        ShowConfig();
+                        return TextCommandResult.Success();
+                    })
                 .EndSubCommand();
         }
 
@@ -670,8 +792,9 @@ namespace SoundsOfNature
             if (vol < 0f || vol > 2f)
                 return TextCommandResult.Error("[SoundsOfNature] Usage: .son vol <0.0 to 2.0>");
 
-            masterVolume = vol;
-            return TextCommandResult.Success($"[SoundsOfNature] Master volume set to {masterVolume:F1}");
+            config.MasterVolume = vol;
+            SaveUserConfig();
+            return TextCommandResult.Success($"[SoundsOfNature] Master volume set to {config.MasterVolume:F1}x (saved to {SoundsOfNatureConfig.FileName})");
         }
 
         private TextCommandResult OnCmdPlay(TextCommandCallingArgs args)
@@ -692,6 +815,175 @@ namespace SoundsOfNature
             PlayRandomSound(group, 1.0f, null);
             return TextCommandResult.Success($"[SoundsOfNature] Playing '{group.Id}' — {group.Label} ({group.Sounds.Count} clips, random pick).");
         }
+
+        #region Per-Group Settings Commands
+
+        /// <summary>
+        /// Looks up a group by id for the tuning commands. Case-insensitive, and on a miss it
+        /// returns an error that names the closest matches rather than just "unknown group", since
+        /// the whole point of these commands is that players shouldn't have to hunt for ids.
+        /// </summary>
+        private bool TryResolveGroup(string id, out SoundGroup group, out TextCommandResult error)
+        {
+            group = soundGroups.FirstOrDefault(sg => sg.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+            if (group != null)
+            {
+                error = default;
+                return true;
+            }
+
+            var near = soundGroups
+                .Where(sg => sg.Id.Contains(id, StringComparison.OrdinalIgnoreCase)
+                          || sg.Label.Contains(id, StringComparison.OrdinalIgnoreCase))
+                .Select(sg => sg.Id)
+                .Take(6)
+                .ToList();
+
+            string hint = near.Count > 0
+                ? $"Did you mean: {string.Join(", ", near)}?"
+                : "Run .son groups to see every id.";
+            error = TextCommandResult.Error($"[SoundsOfNature] No sound group called '{id}'. {hint}");
+            return false;
+        }
+
+        private TextCommandResult OnCmdMute(TextCommandCallingArgs args, bool unmute)
+        {
+            string id   = (string)args[0];
+            string verb = unmute ? "Unmuted" : "Muted";
+
+            if (id.Equals("all", StringComparison.OrdinalIgnoreCase))
+            {
+                foreach (var sg in soundGroups)
+                    config.GetOrAdd(sg.Id, sg.Label).Enabled = unmute;
+                ApplyUserConfig();
+                SaveUserConfig();
+                return TextCommandResult.Success($"[SoundsOfNature] {verb} all {soundGroups.Count} sound groups.");
+            }
+
+            if (!TryResolveGroup(id, out SoundGroup group, out TextCommandResult error)) return error;
+
+            config.GetOrAdd(group.Id, group.Label).Enabled = unmute;
+            ApplyUserConfig();
+            SaveUserConfig();
+            return TextCommandResult.Success($"[SoundsOfNature] {verb} '{group.Id}' ({group.Label}). Saved.");
+        }
+
+        private TextCommandResult OnCmdGroupVolume(TextCommandCallingArgs args)
+        {
+            string id  = (string)args[0];
+            float  mul = (float)args[1];
+
+            if (mul < SoundsOfNatureConfig.MinVolume || mul > SoundsOfNatureConfig.MaxVolume)
+                return TextCommandResult.Error($"[SoundsOfNature] Volume multiplier must be between {SoundsOfNatureConfig.MinVolume:0.##} and {SoundsOfNatureConfig.MaxVolume:0.##}. Usage: .son gvol <groupId> 0.3");
+
+            if (!TryResolveGroup(id, out SoundGroup group, out TextCommandResult error)) return error;
+
+            GroupSettings gs = config.GetOrAdd(group.Id, group.Label);
+            gs.Volume = mul;
+            ApplyUserConfig();
+            SaveUserConfig();
+
+            string note = mul == 0f ? " (silent — .son mute is the tidier way to do that)" : "";
+            return TextCommandResult.Success($"[SoundsOfNature] '{group.Id}' ({group.Label}) volume set to {mul:0.##}x{note}. Saved.");
+        }
+
+        private TextCommandResult OnCmdGroupSpacing(TextCommandCallingArgs args)
+        {
+            string id  = (string)args[0];
+            float  mul = (float)args[1];
+
+            if (mul < SoundsOfNatureConfig.MinSpacing || mul > SoundsOfNatureConfig.MaxSpacing)
+                return TextCommandResult.Error($"[SoundsOfNature] Spacing multiplier must be between {SoundsOfNatureConfig.MinSpacing:0.##} and {SoundsOfNatureConfig.MaxSpacing:0.##}. Usage: .son gspace <groupId> 3");
+
+            if (!TryResolveGroup(id, out SoundGroup group, out TextCommandResult error)) return error;
+
+            GroupSettings gs = config.GetOrAdd(group.Id, group.Label);
+            gs.Spacing = mul;
+            ApplyUserConfig();
+            SaveUserConfig();
+
+            // Show the resulting window so the number means something concrete. Mirrors the
+            // arithmetic in ScheduleNext, weight factor included.
+            float weightFactor = Math.Clamp(5.0f / group.Weight, 0.2f, 5.0f);
+            float scale = weightFactor * IntervalMultiplier * mul * config.GlobalSpacing;
+            float lo = group.IntervalMin * scale;
+            float hi = group.IntervalMax * scale;
+            return TextCommandResult.Success($"[SoundsOfNature] '{group.Id}' ({group.Label}) spacing set to {mul:0.##}x — roughly every {lo:F0}-{hi:F0}s. Saved.");
+        }
+
+        private TextCommandResult OnCmdGlobalSpacing(TextCommandCallingArgs args)
+        {
+            float mul = (float)args[0];
+            if (mul < SoundsOfNatureConfig.MinSpacing || mul > SoundsOfNatureConfig.MaxSpacing)
+                return TextCommandResult.Error($"[SoundsOfNature] Spacing multiplier must be between {SoundsOfNatureConfig.MinSpacing:0.##} and {SoundsOfNatureConfig.MaxSpacing:0.##}. Usage: .son space 2");
+
+            config.GlobalSpacing = mul;
+            ApplyUserConfig();
+            SaveUserConfig();
+            return TextCommandResult.Success($"[SoundsOfNature] All sounds now spaced {mul:0.##}x further apart. Saved.");
+        }
+
+        private TextCommandResult OnCmdReset(TextCommandCallingArgs args)
+        {
+            string id = args[0] as string;
+            if (string.IsNullOrEmpty(id))
+                return TextCommandResult.Error("[SoundsOfNature] Usage: .son reset <groupId>, or .son reset all to clear every override.");
+
+            if (id.Equals("all", StringComparison.OrdinalIgnoreCase))
+            {
+                config.MasterVolume  = 1.0f;
+                config.GlobalSpacing = 1.0f;
+                foreach (var sg in soundGroups)
+                    config.GetOrAdd(sg.Id, sg.Label).Reset();
+                ApplyUserConfig();
+                SaveUserConfig();
+                return TextCommandResult.Success("[SoundsOfNature] All settings restored to the mod defaults.");
+            }
+
+            if (!TryResolveGroup(id, out SoundGroup group, out TextCommandResult error)) return error;
+
+            config.GetOrAdd(group.Id, group.Label).Reset();
+            ApplyUserConfig();
+            SaveUserConfig();
+            return TextCommandResult.Success($"[SoundsOfNature] '{group.Id}' ({group.Label}) restored to defaults. Saved.");
+        }
+
+        private void ShowGroups()
+        {
+            capi.ShowChatMessage($"[SoundsOfNature] {soundGroups.Count} sound groups — id, label, your settings:");
+            foreach (var sg in soundGroups.OrderBy(g => g.Id))
+            {
+                GroupSettings gs = config.ForGroup(sg.Id);
+                string state = gs?.Describe() ?? "default";
+                string mark  = gs != null && !gs.IsDefault ? "*" : " ";
+                capi.ShowChatMessage($" {mark} {sg.Id} — {sg.Label} [{state}]");
+            }
+            capi.ShowChatMessage("  Tame one: .son gvol <id> 0.3 (quieter) · .son gspace <id> 3 (rarer) · .son mute <id> (off)");
+        }
+
+        private void ShowConfig()
+        {
+            string path = System.IO.Path.Combine(GamePaths.ModConfig, SoundsOfNatureConfig.FileName);
+            capi.ShowChatMessage($"[SoundsOfNature] Settings file: {path}");
+            capi.ShowChatMessage($"  enabled: {config.Enabled} · masterVolume: {config.MasterVolume:0.##}x · globalSpacing: {config.GlobalSpacing:0.##}x");
+
+            var tweaked = soundGroups
+                .Select(sg => (sg, gs: config.ForGroup(sg.Id)))
+                .Where(t => t.gs != null && !t.gs.IsDefault)
+                .ToList();
+
+            if (tweaked.Count == 0)
+            {
+                capi.ShowChatMessage("  No per-group overrides. Run .son groups to see the ids you can tune.");
+                return;
+            }
+
+            capi.ShowChatMessage($"  {tweaked.Count} per-group override(s):");
+            foreach (var (sg, gs) in tweaked)
+                capi.ShowChatMessage($"    {sg.Id} — {gs.Describe()}");
+        }
+
+        #endregion
 
         private void ShowStatus()
         {
@@ -719,7 +1011,10 @@ namespace SoundsOfNature
 
             float forestDensity = GetForestDensity(pos);
 
-            capi.ShowChatMessage($"[SoundsOfNature] {(enabled ? "ON" : "OFF")} | Vol: {masterVolume:F1}x");
+            int mutedCount = soundGroups.Count(sg => !sg.UserEnabled);
+            string spacingDesc = config.GlobalSpacing == 1.0f ? "" : $" | Spacing: {config.GlobalSpacing:0.##}x";
+            string mutedDescCfg = mutedCount == 0 ? "" : $" | {mutedCount} group(s) muted — see .son groups";
+            capi.ShowChatMessage($"[SoundsOfNature] {(config.Enabled ? "ON" : "OFF")} | Vol: {config.MasterVolume:F1}x{spacingDesc}{mutedDescCfg}");
             if (cl != null)
                 capi.ShowChatMessage($"  Temp: {cl.Temperature:F1}°C  Rain: {cl.WorldgenRainfall:F2}  Forest: {forestDensity:F2}  Precip: {precip:F2}  Wind: {windSpeed:F2}{mutedDesc}");
             bool nearOcean = IsOceanNearby(pos, capi.ElapsedMilliseconds);
@@ -730,6 +1025,7 @@ namespace SoundsOfNature
             {
                 var eligible = soundGroups
                     .Where(sg =>
+                        sg.UserEnabled &&
                         sg.DuringTemporalStorm == stormActive &&
                         cl.Temperature   >= sg.TempMin   && cl.Temperature   <= sg.TempMax   &&
                         cl.WorldgenRainfall >= sg.RainMin && cl.WorldgenRainfall <= sg.RainMax &&
@@ -812,6 +1108,12 @@ namespace SoundsOfNature
         public List<string> ProximityEntities = new();
         public List<string> ProximityParticleTypes = new(); // simple class-name match, e.g. "EntityParticleMatingGnats"
         public float        ProximityRange    = 12f;
+
+        // Player overrides from ModConfig/soundsofnature.json, resolved once on load rather than
+        // looked up per tick. Multipliers on the values above; UserEnabled false = fully muted.
+        public bool  UserEnabled = true;
+        public float UserVolume  = 1.0f;
+        public float UserSpacing = 1.0f;
 
         public long NextPlayTime;
     }

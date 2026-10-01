@@ -5,7 +5,7 @@
   "website": "https://github.com/joyedit/SoundsofNature",
   "description": "Immersive ambient wildlife sounds that vary by climate, biome, and time of day. Hear songbirds at dawn, crows in temperate forests, wolves at night, and owls at dusk.",
   "authors": ["Feyd"],
-  "version": "0.8.2",
+  "version": "0.8.3",
   "side": "client",
   "requiredOnClient": true,
   "requiredOnServer": false,

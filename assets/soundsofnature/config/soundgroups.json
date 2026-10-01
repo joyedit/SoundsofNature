@@ -402,10 +402,10 @@
         "timeOfDay": ["morning", "midday", "afternoon"],
         "seasons":   ["summer"]
       },
-      "intervalSeconds": { "min": 20, "max": 58  },
-      "volume":          { "min": 0.02,"max": 0.119},
+      "intervalSeconds": { "min": 45, "max": 120 },
+      "volume":          { "min": 0.01,"max": 0.085},
       "pitchVariance": 0.06,
-      "maxConcurrent": 2,
+      "maxConcurrent": 1,
       "weight": 6
     },
     {
