@@ -2,6 +2,66 @@
 
 All notable changes to Sounds of Nature are documented here.
 
+## 0.8.6 — 2026-10-18
+
+### Fixed
+- **Cave drips and bats were still inaudible, and distance was the reason.**
+  Sound positions were drawn from a fixed 15–50 block ring for every group, and
+  the engine attenuates by real distance (OpenAL exponent-clamped with a 6 block
+  reference, so −9 dB at 15 blocks and −20 dB at 50). That averages −14.5 dB of
+  loss that the per-group `volume` numbers never accounted for — fine for a hawk
+  heard across a valley, fatal for a water drip that only exists in the passage
+  you are standing in.
+
+### Added
+- **Per-group `distance` range** in `soundgroups.json`, e.g.
+  `"distance": { "min": 4, "max": 14 }`. Defaults to the previous 15–50 when
+  absent, so every surface group is unchanged. The vertical scatter now scales
+  with the ring too, instead of putting a cave drip 8 blocks overhead.
+
+### Changed
+- The four underground groups now use tight rings and are level-matched to a
+  common loudness at the player: `cave_drips` 4–14 blocks (+12.7 dB at the ear),
+  `cave_bats` 6–20 (+9.6 dB), `cave_rustling` 5–16 (+7.5 dB), `cave_stones` 6–22
+  (+7.3 dB). Their `volume` values went *down*, because the shorter distance more
+  than pays for it.
+
+## 0.8.5 — 2026-10-17
+
+### Fixed
+- **Several groups were effectively inaudible.** The shipped clips were never
+  level-matched: peak levels spanned 33 dB and average levels 45 dB across the
+  pack, so the per-group `volume` numbers meant something different for every
+  group. 30 clips have been normalised (`cave_drip1` was at a −49.7 dB average,
+  now −18.6), and the four groups whose clips were already peak-limited
+  (`cave_stones`, `cave_rustling`, `crickets_night`, `squirrels`) had their
+  config volume raised to match. Worst cases improved by 23–24 dB.
+- **Sounds no longer spawn inside solid rock.** Positions were picked blind in a
+  15–50 block ring, which underground almost always lands inside stone — the
+  sound then has to carry through rock, which is inaudible by itself and muffled
+  further by occlusion mods. The position is now retried up to 6 times, halving
+  the distance each try, so cramped caves place the sound in nearby open air.
+- **`.son play` now always makes a sound.** It documented itself as bypassing
+  every gate but still honoured `maxConcurrent`, so auditioning a group with
+  voices still playing printed "Playing …" and played nothing — for up to 53
+  seconds in the case of `crickets_night`.
+
+### Added
+- `.son log` toggles a log line per sound played (group, clip, volume, pitch,
+  distance, length), so silence can be diagnosed from the client log.
+
+## 0.8.4 — 2026-10-17
+
+### Fixed
+- **Pitch variation now actually applies.** Every group has carried a
+  `pitchVariance` value since the first release, but `PlayOneSound` hardcoded
+  the pitch to 1.0, so each clip played back identical every time. Each voice
+  now gets its own pitch within the group's variance (0.08 = 0.92–1.08), which
+  is most noticeable on groups that only have one or two clips to draw from.
+- `temporal_grinding` could never play the second voice of its configured
+  1–2 burst: `maxConcurrent` was 1, so the burst was clamped straight back to
+  one. Raised to 2.
+
 ## 0.8.3 — 2026-09-30
 
 ### Added

@@ -24,6 +24,7 @@ namespace SoundsOfNature
         private long submergeListenerId;
         private readonly List<LiveSound> liveSounds = new();
         private bool submerged;
+        private bool logPlays;  // '.son log' — writes a line per sound to client-main/debug.log
         private SoundsOfNatureConfig config = new();
         private const float HighWindThreshold = 0.5f;
         private const float FadeInSeconds      = 0.35f; // quick, gentle ramp-up at the start of each sound
@@ -103,6 +104,8 @@ namespace SoundsOfNature
                         ProximityEntities      = g["proximityEntities"]?.ToObject<List<string>>()      ?? new List<string>(),
                         ProximityParticleTypes = g["proximityParticleTypes"]?.ToObject<List<string>>() ?? new List<string>(),
                         ProximityRange         = g["proximityRange"]?.Value<float>()                   ?? 12f,
+                        DistanceMin    = g["distance"]?["min"]?.Value<float>() ?? SoundGroup.DefaultDistanceMin,
+                        DistanceMax    = g["distance"]?["max"]?.Value<float>() ?? SoundGroup.DefaultDistanceMax,
                     };
 
                     JObject cond = g["conditions"] as JObject;
@@ -486,12 +489,20 @@ namespace SoundsOfNature
             sg.NextPlayTime = now + (long)(interval * 1000);
         }
 
-        private void PlayRandomSound(SoundGroup sg, float enclosureMult, Vec3d overridePos = null)
+        /// <param name="ignoreConcurrency">
+        /// Set by '.son play' so auditioning a group always makes a sound. Without it a group whose
+        /// voices are still playing (every cave group has maxConcurrent 1, and crickets_night holds
+        /// its slot for a 52-second clip) silently plays nothing while still reporting success.
+        /// </param>
+        private void PlayRandomSound(SoundGroup sg, float enclosureMult, Vec3d overridePos = null,
+                                     bool ignoreConcurrency = false)
         {
             if (sg.Sounds.Count == 0) return;
 
             // Only free concurrency slots may be filled, so a burst never blows past MaxConcurrent.
-            int free = sg.MaxConcurrent - activeCounts.GetValueOrDefault(sg.Id, 0);
+            int free = ignoreConcurrency
+                ? Math.Max(1, sg.MaxConcurrent)
+                : sg.MaxConcurrent - activeCounts.GetValueOrDefault(sg.Id, 0);
             if (free <= 0) return;
 
             // Fire a random number of overlapping voices this trigger. Each PlayOneSound picks its
@@ -506,6 +517,52 @@ namespace SoundsOfNature
                 PlayOneSound(sg, enclosureMult, overridePos);
         }
 
+        private const int PositionAttempts = 6;  // tries at finding open air before giving up
+
+        /// <summary>
+        /// Picks a random point in the group's distance ring, preferring open air.
+        /// The original version took the first random point in a fixed 15-50 block ring, which
+        /// underground is almost always inside solid rock: the sound then has to carry through
+        /// stone, which is inaudible on its own and muffled further by occlusion mods. Each retry
+        /// pulls the far edge in, so a cramped cave ends up with the sound in the nearest open space
+        /// rather than buried in the wall. The ring's near edge is never crossed, so a group can
+        /// state how close its sounds are allowed to be and rely on it.
+        /// </summary>
+        private Vec3d PickOpenPositionNear(Vec3d playerPos, SoundGroup sg)
+        {
+            var ba = capi.World.BlockAccessor;
+            Vec3d fallback = null;
+
+            // Tolerate a hand-edited config with the bounds reversed or at zero.
+            double near = Math.Max(1.0, Math.Min(sg.DistanceMin, sg.DistanceMax));
+            double far  = Math.Max(near, Math.Max(sg.DistanceMin, sg.DistanceMax));
+            // Vertical scatter stays in proportion to the ring: +8/-2 blocks is right for a hawk
+            // 40 blocks out and absurd for a drip 6 blocks away in a low passage.
+            double ySpan = Math.Clamp(far * 0.2, 2.0, 10.0);
+
+            for (int attempt = 0; attempt < PositionAttempts; attempt++)
+            {
+                double angle    = rng.NextDouble() * Math.PI * 2.0;
+                double spread   = Math.Pow(0.5, attempt); // full ring, then half of it, then a quarter...
+                double distance = near + (far - near) * rng.NextDouble() * spread;
+                var candidate = new Vec3d(
+                    playerPos.X + Math.Cos(angle) * distance,
+                    playerPos.Y + (rng.NextDouble() * ySpan - ySpan * 0.2) * spread,
+                    playerPos.Z + Math.Sin(angle) * distance
+                );
+                fallback ??= candidate;
+
+                var bp = new BlockPos((int)Math.Floor(candidate.X), (int)Math.Floor(candidate.Y),
+                                      (int)Math.Floor(candidate.Z), 0);
+                Block block = ba.GetBlock(bp);
+                // A null block means unloaded chunk: no way to tell, so treat it as acceptable
+                // rather than collapsing every sound onto the player while chunks stream in.
+                if (block == null || !block.SideSolid.All) return candidate;
+            }
+
+            return fallback;
+        }
+
         private void PlayOneSound(SoundGroup sg, float enclosureMult, Vec3d overridePos = null)
         {
             if (sg.Sounds.Count == 0) return;
@@ -515,11 +572,19 @@ namespace SoundsOfNature
 
             // Clips are mono, so OpenAL applies real 3D distance attenuation from Position/Range
             // relative to the player — no need to fake "farther = quieter" here. This volume is
-            // just the source's intrinsic loudness, varied uniformly within the group's range.
+            // just the source's intrinsic loudness, varied uniformly within the group's range; what
+            // reaches the ear is this minus the ring's distance loss, which is why a group's
+            // "distance" and "volume" have to be read together.
             float t = (float)rng.NextDouble();
             float baseVolume = (sg.VolumeMin + t * (sg.VolumeMax - sg.VolumeMin))
                                * sg.UserVolume * config.MasterVolume * enclosureMult;
             float volume     = baseVolume * UnderwaterMult(sg.DuringTemporalStorm);
+
+            // Each voice gets its own pitch so hearing the same clip twice doesn't read as the
+            // same recording played again. PitchVariance is the +/- fraction around 1.0, so 0.08
+            // spans 0.92-1.08. Clamped because the value comes from a hand-editable config and a
+            // pitch at or below zero is not a sound.
+            float pitch = Math.Clamp(1f + (float)(rng.NextDouble() * 2.0 - 1.0) * sg.PitchVariance, 0.25f, 4f);
 
             Vec3d soundPos;
             if (overridePos != null)
@@ -528,14 +593,7 @@ namespace SoundsOfNature
             }
             else
             {
-                var playerPos = capi.World.Player.Entity.Pos.XYZ;
-                double angle    = rng.NextDouble() * Math.PI * 2.0;
-                double distance = 15 + rng.NextDouble() * 35; // 15–50 blocks away
-                soundPos = new Vec3d(
-                    playerPos.X + Math.Cos(angle) * distance,
-                    playerPos.Y + rng.NextDouble() * 10 - 2,
-                    playerPos.Z + Math.Sin(angle) * distance
-                );
+                soundPos = PickOpenPositionNear(capi.World.Player.Entity.Pos.XYZ, sg);
             }
 
             activeCounts[sg.Id] = activeCounts.GetValueOrDefault(sg.Id, 0) + 1;
@@ -547,7 +605,7 @@ namespace SoundsOfNature
                     Position        = new Vec3f((float)soundPos.X, (float)soundPos.Y, (float)soundPos.Z),
                     ShouldLoop      = false,
                     DisposeOnFinish = false, // LoadSound'd sounds aren't auto-managed; we dispose manually below
-                    Pitch           = 1f,
+                    Pitch           = pitch,
                     Volume          = volume,
                     Range           = 64f,
                     SoundType       = EnumSoundType.Sound,
@@ -569,6 +627,18 @@ namespace SoundsOfNature
 
                 var live = new LiveSound { Sound = sound, BaseVolume = baseVolume, IsStorm = sg.DuringTemporalStorm };
                 liveSounds.Add(live);
+
+                // Logged so "I never hear group X" can be answered from client-debug.log instead of
+                // guesswork: it records what was asked for, how loud, and how far away it was put.
+                if (logPlays)
+                {
+                    double dist = capi.World.Player?.Entity != null
+                        ? soundPos.DistanceTo(capi.World.Player.Entity.Pos.XYZ)
+                        : -1;
+                    capi.Logger.Notification(
+                        "[SoundsOfNature] play {0} clip={1} vol={2:0.###} pitch={3:0.##} dist={4:0.#} len={5:0.##}s",
+                        sg.Id, soundPath, volume, pitch, dist, sound.SoundLengthSeconds);
+                }
 
                 // A LoadSound'd one-shot is ours to clean up. Tear it down shortly after the clip
                 // finishes (with a fixed fallback when the decoded length isn't known yet).
@@ -734,6 +804,15 @@ namespace SoundsOfNature
                     .WithArgs(parsers.OptionalWord("groupId"))
                     .HandleWith(OnCmdPlay)
                 .EndSubCommand()
+                .BeginSubCommand("log")
+                    .WithDescription("Toggle a log line for every sound that plays (for diagnosing silence)")
+                    .HandleWith(_ =>
+                    {
+                        logPlays = !logPlays;
+                        return TextCommandResult.Success(
+                            $"[SoundsOfNature] Play logging {(logPlays ? "ON — see client-main.log" : "OFF")}.");
+                    })
+                .EndSubCommand()
                 .BeginSubCommand("groups")
                     .WithAlias("list")
                     .WithDescription("List every sound group id, its label, and your current settings for it")
@@ -812,7 +891,7 @@ namespace SoundsOfNature
 
             // Bypasses every gate (time, season, climate, weather mute, proximity, maxConcurrent)
             // so any group can be auditioned anywhere. Uses the normal random offset/volume path.
-            PlayRandomSound(group, 1.0f, null);
+            PlayRandomSound(group, 1.0f, null, ignoreConcurrency: true);
             return TextCommandResult.Success($"[SoundsOfNature] Playing '{group.Id}' — {group.Label} ({group.Sounds.Count} clips, random pick).");
         }
 
@@ -1108,6 +1187,15 @@ namespace SoundsOfNature
         public List<string> ProximityEntities = new();
         public List<string> ProximityParticleTypes = new(); // simple class-name match, e.g. "EntityParticleMatingGnats"
         public float        ProximityRange    = 12f;
+
+        // How far from the player a sound may be placed, in blocks. The engine attenuates by real
+        // distance (OpenAL exponent-clamped, reference 6 blocks: about -9 dB at 15 blocks and -20 dB
+        // at 50), so this is as much a loudness control as a staging one. Wide suits something heard
+        // across a valley; a sound that only exists in the room you are standing in, like a cave
+        // drip, needs a tight ring or the distance loss alone buries it.
+        public const float DefaultDistanceMin = 15f;
+        public const float DefaultDistanceMax = 50f;
+        public float DistanceMin = DefaultDistanceMin, DistanceMax = DefaultDistanceMax;
 
         // Player overrides from ModConfig/soundsofnature.json, resolved once on load rather than
         // looked up per tick. Multipliers on the values above; UserEnabled false = fully muted.

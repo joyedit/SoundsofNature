@@ -297,7 +297,7 @@
         "seasons":   []
       },
       "intervalSeconds": { "min": 45, "max": 90  },
-      "volume":          { "min": 0.02,"max": 0.102},
+      "volume":          { "min": 0.045,"max": 0.23},
       "pitchVariance": 0.03,
       "maxConcurrent": 1,
       "weight": 6
@@ -425,7 +425,7 @@
         "seasons":   []
       },
       "intervalSeconds": { "min": 42, "max": 117 },
-      "volume":          { "min": 0.015,"max": 0.09},
+      "volume":          { "min": 0.031,"max": 0.183},
       "pitchVariance": 0.07,
       "maxConcurrent": 1,
       "weight": 6
@@ -493,7 +493,8 @@
         "seasons":   []
       },
       "intervalSeconds": { "min": 8,  "max": 25  },
-      "volume":          { "min": 0.02,"max": 0.128},
+      "volume":          { "min": 0.023,"max": 0.145},
+      "distance":        { "min": 4,   "max": 14   },
       "pitchVariance": 0.08,
       "maxConcurrent": 2,
       "weight": 10
@@ -516,7 +517,8 @@
         "seasons":   []
       },
       "intervalSeconds": { "min": 40, "max": 120 },
-      "volume":          { "min": 0.03,"max": 0.153},
+      "volume":          { "min": 0.077,"max": 0.392},
+      "distance":        { "min": 6,   "max": 22   },
       "pitchVariance": 0.06,
       "maxConcurrent": 1,
       "weight": 5
@@ -539,7 +541,8 @@
         "seasons":   []
       },
       "intervalSeconds": { "min": 30, "max": 90  },
-      "volume":          { "min": 0.02,"max": 0.136},
+      "volume":          { "min": 0.022,"max": 0.15},
+      "distance":        { "min": 6,   "max": 20   },
       "pitchVariance": 0.07,
       "maxConcurrent": 1,
       "weight": 6
@@ -562,7 +565,8 @@
         "seasons":   []
       },
       "intervalSeconds": { "min": 25, "max": 70  },
-      "volume":          { "min": 0.01,"max": 0.102},
+      "volume":          { "min": 0.027,"max": 0.27},
+      "distance":        { "min": 5,   "max": 16   },
       "pitchVariance": 0.06,
       "maxConcurrent": 1,
       "weight": 7
@@ -898,7 +902,7 @@
       "intervalSeconds": { "min": 18, "max": 45 },
       "volume":          { "min": 0.04,"max": 0.153},
       "pitchVariance": 0.08,
-      "maxConcurrent": 1,
+      "maxConcurrent": 2,
       "burst": { "min": 1, "max": 2 },
       "weight": 5
     },
